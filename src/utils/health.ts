@@ -38,11 +38,17 @@ export const healthCheck = catchAsync(
 
     res.status(200).json({
       status: 'success',
-      message: 'Server is healthy',
+      message: 'Test API is healthy', //Prefix 'Test' with the server's actual name; 'RAHA'
       timestamp: new Date().toISOString(),
       uptime: formatUptime(Math.floor(process.uptime())),
       database: dbStatus,
       server: 'online',
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+        total:
+          Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
+      },
+      environment: process.env.NODE_ENV || 'development',
     });
   },
 );
