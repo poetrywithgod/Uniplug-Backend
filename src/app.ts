@@ -6,7 +6,7 @@ import taskRoutes from './routes/taskRoutes';
 import catchAll404Errors from './middlewares/catchAll404Errors';
 import globalErrorHandler from './middlewares/errorHandler';
 import { healthCheck } from './utils/health';
-import { connectToDatabase } from './configs/dbConfig';
+import { connectDatabase } from './configs/prismaConfig';
 import { rateLimiter } from './configs/rateLimitConfig';
 
 import './configs/sentryConfig';
@@ -14,7 +14,7 @@ import './configs/sentryConfig';
 const app = express();
 
 // connect to DB
-connectToDatabase();
+connectDatabase();
 
 // Rate limiting - Apply to all requests
 app.use(rateLimiter);
@@ -37,21 +37,6 @@ app.use('/api/v1/tasks', taskRoutes);
 
 app.get('/debug-sentry', (req, res) => {
   throw new Error('My first Sentry error!');
-});
-
-// Test rate limiting endpoint
-app.get('/test-rate-limit', (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'Rate limiting test endpoint',
-    timestamp: new Date().toISOString(),
-    ip: req.ip,
-    rateLimitInfo: {
-      remaining: res.getHeader('X-RateLimit-Remaining'),
-      limit: res.getHeader('X-RateLimit-Limit'),
-      reset: res.getHeader('X-RateLimit-Reset'),
-    },
-  });
 });
 
 // Error handlers

@@ -4,11 +4,15 @@
   "description": "A modern Node.js API template built with TypeScript, Express, MongoDB, Winston logging, and Sentry error monitoring using functional programming patterns.",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
+    "build": "npm run generate && tsc && npm run sentry:sourcemaps",
+    "start": "cross-env NODE_ENV=prod node dist/server.js",
     "prod": "npm run build && cross-env NODE_ENV=prod npm start",
-    "dev": "nodemon --watch src/**/*.ts --exec ts-node src/server.ts",
-    "lint": "eslint src/**/*.ts"
+    "dev": "npm run generate && nodemon --watch src -e ts --exec ts-node src/server.ts",
+    "lint": "eslint src/**/*.ts",
+    "migrate:deploy": "npx prisma migrate deploy",
+    "migrate:dev": "npx prisma migrate dev --name $(date +%Y%m%d_%H%M%S)",
+    "studio": "npx prisma studio",
+    "generate": "npx prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +30,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@prisma/client": "6.19",
     "@sentry/node": "^10.36.0",
     "cors": "^2.8.6",
     "cross-env": "^10.1.0",
@@ -35,6 +40,7 @@
     "http-errors": "^2.0.1",
     "mongoose": "^9.1.5",
     "morgan": "^1.10.1",
+    "prisma": "6.19",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0"
   }

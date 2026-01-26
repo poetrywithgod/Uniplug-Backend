@@ -5,12 +5,14 @@ const {
   PORT, 
   NODE_ENV, 
   MONGO_URI, 
-  SENTRY_DSN 
+  SENTRY_DSN,
+  DATABASE_URL
 } = process.env;
 
 export { 
   PORT, 
   NODE_ENV, 
   MONGO_URI, 
-  SENTRY_DSN 
+  SENTRY_DSN,
+  DATABASE_URL
 };

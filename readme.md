@@ -1,12 +1,13 @@
 # Important Modules - Node.js API Template
 
-A modern Node.js API template built with TypeScript, Express, and MongoDB using functional programming patterns.
+A modern Node.js API template built with TypeScript, Express, Prisma, and MongoDB using functional programming patterns.
 
 ## Features
 
 - ✅ **TypeScript** - Full type safety
 - ✅ **Express.js** - Fast web framework
-- ✅ **MongoDB with Mongoose** - NoSQL database integration
+- ✅ **Prisma ORM** - Type-safe database client with MongoDB support
+- ✅ **MongoDB** - NoSQL database integration via Prisma
 - ✅ **Functional Programming** - No class components, pure functions
 - ✅ **Error Handling** - Centralized error handling with `catchAsync` and `http-errors`
 - ✅ **Health Check** - Server and database monitoring endpoint
@@ -17,29 +18,37 @@ A modern Node.js API template built with TypeScript, Express, and MongoDB using 
 - ✅ **CORS Support** - Cross-Origin Resource Sharing enabled
 - ✅ **Environment Configuration** - Centralized environment variable management
 - ✅ **Rate Limiting** - IP-based request rate limiting with configurable limits
+- ✅ **Prisma Studio** - Database GUI for viewing and editing data
 
 ## Quick Start
 
 ### Environment Setup
 
 1. Copy environment template:
+
 ```bash
 cp .env.local .env
 ```
 
 2. Configure your environment variables in `.env`:
+
 ```bash
 NODE_ENV=development
 PORT=3000
-MONGO_URI=mongodb://localhost:27017/important-modules
+DATABASE_URL="mongodb+srv://user:password@cluster.mongodb.net/mydb?retryWrites=true&w=majority"
 SENTRY_DSN=your_sentry_dsn_here  # Optional for error monitoring
 ```
+
+> **Note:** Use `DATABASE_URL` for Prisma (not `MONGO_URI`)
 
 ### Development
 
 ```bash
 # Install dependencies
 npm install
+
+# Generate Prisma Client
+npm run generate
 
 # Start development server (with hot reload)
 npm run dev
@@ -50,12 +59,15 @@ npm run build
 # Start production server (builds first, then runs)
 npm run prod
 
-# Or run production manually:
-# npm run build
-# npm start
-
 # Run linting
 npm run lint
+
+# Open Prisma Studio (Database GUI)
+npm run studio
+
+# Run database migrations
+npm run migrate:dev     # Development migrations
+npm run migrate:deploy  # Production migrations
 ```
 
 ## API Endpoints
@@ -79,18 +91,17 @@ npm run lint
 ### Debug Endpoints (Development Only)
 
 - `GET /debug-sentry` - Test Sentry error tracking
-- `GET /test-rate-limit` - Test rate limiting functionality
 
 ## Project Structure
 
 ```
 src/
 ├── controllers/        # Request handlers
-├── models/            # Database models (Mongoose schemas)
+├── models/            # Legacy models (can be removed if fully migrated)
 ├── routes/            # Route definitions
 ├── utils/             # Utility functions (catchAsync, health)
 ├── configs/           # Configuration files
-│   ├── dbConfig.ts    # Database connection
+│   ├── prismaConfig.ts # Prisma client configuration
 │   ├── envConfig.ts   # Environment variables
 │   ├── loggerConfig.ts # Winston logging setup
 │   ├── sentryConfig.ts # Sentry error monitoring
@@ -100,6 +111,11 @@ src/
 │   └── catchAll404Errors.ts # 404 error handling
 ├── app.ts            # Express app setup
 └── server.ts         # Server entry point
+prisma/
+├── schema.prisma     # Prisma schema definitions
+└── migrations/       # Database migrations (auto-generated)
+generated/
+└── prisma/           # Generated Prisma Client (auto-generated)
 logs/                 # Log files (auto-generated)
 ├── combined-*.log    # Combined logs with rotation
 └── error-*.log       # Error logs with rotation
@@ -112,9 +128,19 @@ logs/                 # Log files (auto-generated)
 All controllers use `catchAsync` wrapper and `http-errors` for consistent error handling:
 
 ```typescript
+import prisma from '../configs/prismaConfig';
+
 export const getTask = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const task = await Task.findById(req.params.id);
+    const { id } = req.params;
+
+    if (typeof id !== 'string') {
+      return next(createError(400, 'Invalid task ID'));
+    }
+
+    const task = await prisma.task.findUnique({
+      where: { id },
+    });
 
     if (!task) {
       return next(createError(404, 'Task not found'));
@@ -129,36 +155,45 @@ export const getTask = catchAsync(
 ```
 
 The global error handler provides comprehensive error handling with:
+
+- Prisma-specific error handling
 - MongoDB duplicate key error handling
-- Mongoose validation error handling
+- Validation error handling
 - Different responses for development vs production
 - Automatic error logging
 
-### Database Models
+### Database Models with Prisma
 
-Using Mongoose schemas with TypeScript interfaces (no classes):
+Using Prisma schema for type-safe database models:
+
+```prisma
+// prisma/schema.prisma
+model Task {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  completed   Boolean
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+```
+
+Generated TypeScript types are automatically available:
 
 ```typescript
-export interface ITask extends Document {
-  _id: Types.ObjectId;
-  title: string;
-  description: string;
-  completed: boolean;
-}
+import prisma from '../configs/prismaConfig';
 
-const TaskSchema = new Schema<ITask>(
-  {
-    title: { type: String },
-    description: { type: String, trim: true },
-    completed: { type: Boolean },
-  },
-  { timestamps: true },
-);
+// Fully type-safe database queries
+const tasks = await prisma.task.findMany();
+const task = await prisma.task.create({
+  data: { title, description, completed },
+});
 ```
 
 ### Logging System
 
 Advanced logging with Winston featuring:
+
 - Multiple log levels (error, warn, info)
 - Daily rotating files
 - Colored console output for development
@@ -175,6 +210,7 @@ dbLog.error('Database connection failed');
 ### Error Monitoring
 
 Sentry integration for production error tracking:
+
 - Automatic error capture and reporting
 - Environment-specific configuration
 - Debug endpoint for testing error tracking
@@ -182,6 +218,7 @@ Sentry integration for production error tracking:
 ### Rate Limiting
 
 Simple and effective rate limiting:
+
 - **Basic Rate Limiter**: Applied globally to all routes
 - **Production**: 100 requests per 15 minutes
 - **Development**: 1000 requests per 15 minutes
@@ -215,8 +252,10 @@ Simple health check with readable uptime format:
 ### Dependencies
 
 **Core Dependencies:**
+
 - `express` - Web framework
-- `mongoose` - MongoDB ODM
+- `@prisma/client` - Prisma ORM client
+- `prisma` - Prisma CLI and migration tools
 - `cors` - Cross-origin resource sharing
 - `dotenv` - Environment variable loading
 - `http-errors` - HTTP error utilities
@@ -227,10 +266,36 @@ Simple health check with readable uptime format:
 - `express-rate-limit` - Request rate limiting
 
 **Development Dependencies:**
+
 - `typescript` & `ts-node` - TypeScript support
 - `nodemon` - Development hot reload
 - `eslint` & `prettier` - Code quality and formatting
 - `@types/*` - TypeScript type definitions
+
+### Prisma Commands
+
+```bash
+# Generate Prisma Client after schema changes
+npx prisma generate
+
+# Create a new migration
+npx prisma migrate dev --name migration_name
+
+# Apply migrations in production
+npx prisma migrate deploy
+
+# Open Prisma Studio (Database GUI)
+npx prisma studio
+
+# Reset database (development only)
+npx prisma migrate reset
+
+# Validate schema
+npx prisma validate
+
+# Format schema file
+npx prisma format
+```
 
 ### Environment Variables
 
@@ -239,16 +304,28 @@ Required environment variables:
 ```bash
 NODE_ENV=development          # Environment (development/production/prod)
 PORT=3000                    # Server port
-MONGO_URI=mongodb://...      # MongoDB connection string
+DATABASE_URL="mongodb+srv://..." # MongoDB connection string for Prisma
 SENTRY_DSN=https://...       # Sentry DSN (optional)
 ```
+
+> **Important:** Prisma uses `DATABASE_URL` to connect to MongoDB. Make sure this is set correctly in your `.env` file.
 
 ### Log Files
 
 The application automatically creates and manages log files in the `logs/` directory:
+
 - `combined-YYYY-MM-DD-HH.log` - All application logs
 - `error-YYYY-MM-DD-HH.log` - Error logs only
 - Automatic compression and 14-day retention
 - Maximum file size of 20MB
 
-Perfect for developing scalable REST APIs!
+## Prisma Benefits
+
+- **Type Safety**: Auto-generated TypeScript types for all database models
+- **Auto-completion**: Full IDE support with intelligent auto-complete
+- **Migration System**: Version-controlled database schema changes
+- **Prisma Studio**: Visual database browser and editor
+- **MongoDB Support**: Native MongoDB support with type-safe queries (Prisma 6.19)
+- **Zero-cost Abstractions**: Minimal performance overhead
+
+Perfect for developing scalable REST APIs with type-safe database access!
