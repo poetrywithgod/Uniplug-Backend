@@ -74,6 +74,7 @@ function logger(labelName: string) {
 const globalLog = logger('Global');
 const dbLog = logger('Database');
 const authLog = logger('Auth');
+const mailLog = logger('Mail');
 
 // Catch unhandled promise rejections
 process.on('unhandledRejection', (error: Error) => {
@@ -96,4 +97,4 @@ process.on('warning', (warning) => {
   globalLog.warn(`Warning : ${warning.message || warning}`);
 });
 
-export { globalLog, dbLog, authLog };
+export { globalLog, dbLog, authLog, mailLog };
