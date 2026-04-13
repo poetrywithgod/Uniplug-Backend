@@ -1,18 +1,28 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const { 
-  PORT, 
-  NODE_ENV, 
-  MONGO_URI, 
+const {
+  PORT,
+  NODE_ENV,
+  MONGO_URI,
   SENTRY_DSN,
-  DATABASE_URL
+  DATABASE_URL,
+  EMAIL_USERNAME,
+  EMAIL_APP_PASSWORD,
+  JWT_SECRET,
+  JWT_EXPIRES_IN,
+  OTP_EXPIRES_IN_MINUTES,
 } = process.env;
 
-export { 
-  PORT, 
-  NODE_ENV, 
-  MONGO_URI, 
+export {
+  PORT,
+  NODE_ENV,
+  MONGO_URI,
   SENTRY_DSN,
-  DATABASE_URL
+  DATABASE_URL,
+  EMAIL_USERNAME,
+  EMAIL_APP_PASSWORD,
+  JWT_SECRET,
+  JWT_EXPIRES_IN,
+  OTP_EXPIRES_IN_MINUTES,
 };
