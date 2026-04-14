@@ -9,7 +9,15 @@ const router = express.Router();
 
 router.use(requireAuth, requireRole('ADMIN'));
 
-router.post('/lecturers', validateRequest(createLecturerSchema), onboardLecturer);
-router.post('/hostel-admins', validateRequest(createHostelAdminSchema), onboardHostelAdmin);
+router.post(
+  '/lecturers',
+  validateRequest(createLecturerSchema),
+  onboardLecturer,
+);
+router.post(
+  '/hostel-admins',
+  validateRequest(createHostelAdminSchema),
+  onboardHostelAdmin,
+);
 
 export default router;
