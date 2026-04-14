@@ -5,6 +5,7 @@ import cors from 'cors';
 import adminRoutes from './modules/admin/adminRoute';
 import authRoutes from './modules/auth/authRoute';
 import metaRoutes from './modules/meta/metaRoute';
+import superAdminRoutes from './modules/superAdmin/superAdminRoute';
 import catchAll404Errors from './middlewares/catchAll404Errors';
 import globalErrorHandler from './middlewares/errorHandler';
 import { healthCheck } from './utils/health';
@@ -35,13 +36,14 @@ app.get('/', async (req: Request, res: Response, next: NextFunction) => {
     name: 'Uniplug API',
     version: 'v1',
     description:
-      'Backend API for Uniplug authentication, admin onboarding, and shared metadata services.',
+      'Backend API for Uniplug authentication, multi-tenant onboarding, school-admin governance, and shared metadata services.',
     health: '/health',
     baseUrl: '/api/v1',
     docs: '/api-docs',
     endpoints: {
       auth: '/api/v1/auth',
-      admin: '/api/v1/admin',
+      superAdmin: '/api/v1/super-admin',
+      schoolAdmin: '/api/v1/admin',
       meta: '/api/v1/meta',
     },
   });
@@ -49,6 +51,7 @@ app.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 app.use('/health', healthCheck);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/super-admin', superAdminRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/meta', metaRoutes);
 
