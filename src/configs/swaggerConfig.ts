@@ -217,7 +217,11 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email'],
                 properties: {
-                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'jane@uniplug.com',
+                  },
                 },
               },
             },
@@ -243,7 +247,11 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email', 'otpCode', 'newPassword'],
                 properties: {
-                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'jane@uniplug.com',
+                  },
                   otpCode: { type: 'string', example: '123456' },
                   newPassword: { type: 'string', example: 'NewSecure123' },
                 },
@@ -265,7 +273,8 @@ const swaggerSpec = {
       post: {
         tags: ['Admin'],
         summary: 'Create lecturer account',
-        description: 'Creates lecturer account and emails login details + verification OTP.',
+        description:
+          'Creates lecturer account and emails login details + verification OTP.',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -273,11 +282,21 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['fullName', 'staffId', 'email', 'department', 'password'],
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
                 properties: {
                   fullName: { type: 'string', example: 'Fatima Ibrahim' },
                   staffId: { type: 'string', example: 'Y-SKMS' },
-                  email: { type: 'string', format: 'email', example: 'fatima@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'fatima@uniplug.com',
+                  },
                   department: { type: 'string', example: 'Microbiology' },
                   password: { type: 'string', example: 'Secure123' },
                 },
@@ -299,7 +318,8 @@ const swaggerSpec = {
       post: {
         tags: ['Admin'],
         summary: 'Create hostel admin account',
-        description: 'Creates hostel admin account and emails login details + verification OTP.',
+        description:
+          'Creates hostel admin account and emails login details + verification OTP.',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -307,11 +327,21 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['fullName', 'staffId', 'email', 'department', 'password'],
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
                 properties: {
                   fullName: { type: 'string', example: 'Fatima Ibrahim' },
                   staffId: { type: 'string', example: 'H-A112' },
-                  email: { type: 'string', format: 'email', example: 'hostel-admin@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'hostel-admin@uniplug.com',
+                  },
                   department: { type: 'string', example: 'Hostel Operations' },
                   password: { type: 'string', example: 'Secure123' },
                 },
@@ -333,7 +363,8 @@ const swaggerSpec = {
       get: {
         tags: ['Meta'],
         summary: 'Get Nigerian university departments',
-        description: 'Returns a curated JSON list of Nigerian university academic departments.',
+        description:
+          'Returns a curated JSON list of Nigerian university academic departments.',
         responses: {
           200: {
             description: 'Departments list returned',
