@@ -17,8 +17,14 @@ const swaggerSpec = {
   ],
   tags: [
     { name: 'Auth', description: 'Authentication and OTP flows' },
-    { name: 'SuperAdmin', description: 'Platform-level onboarding and school-admin governance' },
-    { name: 'SchoolAdmin', description: 'School-admin staff onboarding and governance' },
+    {
+      name: 'SuperAdmin',
+      description: 'Platform-level onboarding and school-admin governance',
+    },
+    {
+      name: 'SchoolAdmin',
+      description: 'School-admin staff onboarding and governance',
+    },
     { name: 'Meta', description: 'Shared read-only metadata endpoints' },
   ],
   components: {
@@ -41,14 +47,29 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['firstName', 'lastName', 'email', 'phoneNumber', 'password', 'role'],
+                required: [
+                  'firstName',
+                  'lastName',
+                  'email',
+                  'phoneNumber',
+                  'password',
+                  'role',
+                ],
                 properties: {
                   firstName: { type: 'string', example: 'Jane' },
                   lastName: { type: 'string', example: 'Doe' },
-                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'jane@uniplug.com',
+                  },
                   phoneNumber: { type: 'string', example: '+2348012345678' },
                   password: { type: 'string', example: 'Secure123' },
-                  role: { type: 'string', enum: ['applicant', 'parent'], example: 'applicant' },
+                  role: {
+                    type: 'string',
+                    enum: ['applicant', 'parent'],
+                    example: 'applicant',
+                  },
                 },
               },
             },
@@ -69,7 +90,11 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email', 'otpCode'],
                 properties: {
-                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'jane@uniplug.com',
+                  },
                   otpCode: { type: 'string', example: '123456' },
                 },
               },
@@ -91,7 +116,11 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email', 'password'],
                 properties: {
-                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'jane@uniplug.com',
+                  },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
@@ -116,7 +145,11 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email'],
                 properties: {
-                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'jane@uniplug.com',
+                  },
                 },
               },
             },
@@ -137,7 +170,11 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email', 'otpCode', 'newPassword'],
                 properties: {
-                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'jane@uniplug.com',
+                  },
                   otpCode: { type: 'string', example: '123456' },
                   newPassword: { type: 'string', example: 'NewSecure123' },
                 },
@@ -159,13 +196,30 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['schoolName', 'schoolId', 'email', 'school', 'address', 'postalCode'],
+                required: [
+                  'schoolName',
+                  'schoolId',
+                  'email',
+                  'school',
+                  'address',
+                  'postalCode',
+                ],
                 properties: {
-                  schoolName: { type: 'string', example: 'University of Lagos' },
+                  schoolName: {
+                    type: 'string',
+                    example: 'University of Lagos',
+                  },
                   schoolId: { type: 'string', example: 'UPH-009' },
-                  email: { type: 'string', format: 'email', example: 'info@unilag.edu.ng' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'info@unilag.edu.ng',
+                  },
                   school: { type: 'string', example: 'Unilag' },
-                  address: { type: 'string', example: '1 University Road, Akoka' },
+                  address: {
+                    type: 'string',
+                    example: '1 University Road, Akoka',
+                  },
                   postalCode: { type: 'string', example: '101017' },
                 },
               },
@@ -186,11 +240,21 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['fullName', 'schoolId', 'email', 'school', 'password'],
+                required: [
+                  'fullName',
+                  'schoolId',
+                  'email',
+                  'school',
+                  'password',
+                ],
                 properties: {
                   fullName: { type: 'string', example: 'Fatima Ibrahim' },
                   schoolId: { type: 'string', example: 'UPH-009' },
-                  email: { type: 'string', format: 'email', example: 'demo@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'demo@uniplug.com',
+                  },
                   school: { type: 'string', example: 'Uniport' },
                   password: { type: 'string', example: 'Secure123' },
                 },
@@ -198,7 +262,9 @@ const swaggerSpec = {
             },
           },
         },
-        responses: { 201: { description: 'School admin submitted (pending approval)' } },
+        responses: {
+          201: { description: 'School admin submitted (pending approval)' },
+        },
       },
     },
     '/super-admin/school-admins/{userId}/verify': {
@@ -206,7 +272,14 @@ const swaggerSpec = {
         tags: ['SuperAdmin'],
         summary: 'Verify school admin',
         security: [{ bearerAuth: [] }],
-        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            name: 'userId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         responses: { 200: { description: 'School admin verified' } },
       },
     },
@@ -215,7 +288,14 @@ const swaggerSpec = {
         tags: ['SuperAdmin'],
         summary: 'Reject school admin',
         security: [{ bearerAuth: [] }],
-        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            name: 'userId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         requestBody: {
           required: false,
           content: {
@@ -223,7 +303,10 @@ const swaggerSpec = {
               schema: {
                 type: 'object',
                 properties: {
-                  remark: { type: 'string', example: 'Incomplete compliance documents' },
+                  remark: {
+                    type: 'string',
+                    example: 'Incomplete compliance documents',
+                  },
                 },
               },
             },
@@ -243,11 +326,21 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['fullName', 'staffId', 'email', 'department', 'password'],
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
                 properties: {
                   fullName: { type: 'string', example: 'Samuel Okonkwo' },
                   staffId: { type: 'string', example: 'L-1002' },
-                  email: { type: 'string', format: 'email', example: 'samuel@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'samuel@uniplug.com',
+                  },
                   department: { type: 'string', example: 'Computer Science' },
                   password: { type: 'string', example: 'Secure123' },
                 },
@@ -255,7 +348,11 @@ const swaggerSpec = {
             },
           },
         },
-        responses: { 201: { description: 'Lecturer submitted (pending school-admin approval)' } },
+        responses: {
+          201: {
+            description: 'Lecturer submitted (pending school-admin approval)',
+          },
+        },
       },
     },
     '/admin/hostel-admins': {
@@ -269,11 +366,21 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['fullName', 'staffId', 'email', 'department', 'password'],
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
                 properties: {
                   fullName: { type: 'string', example: 'Amaka Eze' },
                   staffId: { type: 'string', example: 'H-1002' },
-                  email: { type: 'string', format: 'email', example: 'amaka@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'amaka@uniplug.com',
+                  },
                   department: { type: 'string', example: 'Hostel Operations' },
                   password: { type: 'string', example: 'Secure123' },
                 },
@@ -281,7 +388,12 @@ const swaggerSpec = {
             },
           },
         },
-        responses: { 201: { description: 'Hostel admin submitted (pending school-admin approval)' } },
+        responses: {
+          201: {
+            description:
+              'Hostel admin submitted (pending school-admin approval)',
+          },
+        },
       },
     },
     '/admin/staff/{userId}/verify': {
@@ -289,7 +401,14 @@ const swaggerSpec = {
         tags: ['SchoolAdmin'],
         summary: 'Verify lecturer/hostel admin',
         security: [{ bearerAuth: [] }],
-        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            name: 'userId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         responses: { 200: { description: 'Staff verified' } },
       },
     },
@@ -298,7 +417,14 @@ const swaggerSpec = {
         tags: ['SchoolAdmin'],
         summary: 'Reject lecturer/hostel admin',
         security: [{ bearerAuth: [] }],
-        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            name: 'userId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         requestBody: {
           required: false,
           content: {

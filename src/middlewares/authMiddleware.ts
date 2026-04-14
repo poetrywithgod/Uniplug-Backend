@@ -5,7 +5,8 @@ import prisma from '../configs/prismaConfig';
 import { verifyAccessToken } from '../modules/auth/authSecurity';
 
 type AllowedRole =
-  | 'ADMIN'
+  | 'SUPER_ADMIN'
+  | 'SCHOOL_ADMIN'
   | 'APPLICANT'
   | 'PARENT'
   | 'LECTURER'
@@ -41,11 +42,34 @@ export const requireAuth = async (
 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, role: true, isVerified: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isVerified: true,
+        approvalStatus: true,
+        tenantId: true,
+        schoolId: true,
+        school: true,
+      },
     });
 
     if (!user) {
       return next(createError(401, 'Invalid authentication token.'));
+    }
+
+    const requiresApproval =
+      user.role === 'SCHOOL_ADMIN' ||
+      user.role === 'LECTURER' ||
+      user.role === 'HOSTEL_ADMIN';
+
+    if (requiresApproval && user.approvalStatus !== 'VERIFIED') {
+      return next(
+        createError(
+          403,
+          'Account approval is required before performing this operation.',
+        ),
+      );
     }
 
     res.locals.user = user;
