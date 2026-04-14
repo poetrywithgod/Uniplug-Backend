@@ -26,6 +26,41 @@
 - Removed `Task` model from Prisma schema to fully remove task API domain from database schema.
 - Clean-rebuilt `dist` so old task artifacts are no longer present in compiled output.
 
+## Latest Update (Departments + Admin Onboarding + Password Recovery)
+
+- Added Nigerian university departments dataset file at `data/departments.json`.
+- Added metadata module endpoint:
+  - `GET /api/v1/meta/departments`
+- Added admin onboarding module with admin-only protected endpoints:
+  - `POST /api/v1/admin/lecturers`
+  - `POST /api/v1/admin/hostel-admins`
+- Added auth/role middleware to enforce JWT authentication and `ADMIN` role for onboarding endpoints.
+- Extended roles in Prisma schema:
+  - `LECTURER`
+  - `HOSTEL_ADMIN`
+- Extended `User` schema fields for staff and password recovery:
+  - `staffId`
+  - `department`
+  - `resetOtpHash`
+  - `resetOtpExpiresAt`
+  - `phoneNumber` made optional
+- Added OTP-based password recovery flow:
+  - `POST /api/v1/auth/forgot-password`
+  - `POST /api/v1/auth/reset-password`
+- Updated email utility:
+  - added staff onboarding email with login credentials + verification OTP
+  - updated logo URL to provided Cloudinary asset link
+- Expanded Swagger docs to include:
+  - auth forgot/reset endpoints
+  - admin onboarding endpoints
+  - departments metadata endpoint
+  - bearer auth security scheme for protected admin endpoints
+- Updated root API intro in `/` to include newly registered modules (`auth`, `admin`, `meta`) and clearer API description.
+- Build verification:
+  - `npm run build` passed successfully
+- Database sync status:
+  - `npx prisma@6.19 db push` still failing due MongoDB authentication (`SCRAM bad auth`).
+
 ## Completed Work
 
 ### 1) Auth system foundation

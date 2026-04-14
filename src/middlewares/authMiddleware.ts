@@ -4,7 +4,12 @@ import createError from 'http-errors';
 import prisma from '../configs/prismaConfig';
 import { verifyAccessToken } from '../modules/auth/authSecurity';
 
-type AllowedRole = 'ADMIN' | 'APPLICANT' | 'PARENT' | 'LECTURER' | 'HOSTEL_ADMIN';
+type AllowedRole =
+  | 'ADMIN'
+  | 'APPLICANT'
+  | 'PARENT'
+  | 'LECTURER'
+  | 'HOSTEL_ADMIN';
 
 const getBearerToken = (authHeader?: string): string | null => {
   if (!authHeader) {
@@ -55,7 +60,9 @@ export const requireRole = (...roles: AllowedRole[]) => {
     const user = res.locals.user as { role?: AllowedRole } | undefined;
 
     if (!user?.role || !roles.includes(user.role)) {
-      return next(createError(403, 'You do not have permission to perform this action.'));
+      return next(
+        createError(403, 'You do not have permission to perform this action.'),
+      );
     }
 
     next();
