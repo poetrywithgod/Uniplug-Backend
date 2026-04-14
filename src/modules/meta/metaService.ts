@@ -8,7 +8,11 @@ interface DepartmentsPayload {
   departments: string[];
 }
 
-const departmentsFilePath = path.join(process.cwd(), 'data', 'departments.json');
+const departmentsFilePath = path.join(
+  process.cwd(),
+  'data',
+  'departments.json',
+);
 
 export const getDepartments = async (): Promise<DepartmentsPayload> => {
   const fileContent = await fs.readFile(departmentsFilePath, 'utf-8');
