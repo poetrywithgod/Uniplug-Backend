@@ -43,22 +43,25 @@ const toPublicUser = (user: {
   phoneNumber: string | null;
   role: Role;
   isVerified: boolean;
+  school?: string | null;
+  schoolId?: string | null;
+  approvalStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
   staffId?: string | null;
   department?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }): PublicUser => ({
-  id: user.id,
   firstName: user.firstName,
   lastName: user.lastName,
   email: user.email,
   phoneNumber: user.phoneNumber,
   role: user.role,
   isVerified: user.isVerified,
+  school: user.school,
+  schoolId: user.schoolId,
+  approvalStatus: user.approvalStatus,
   staffId: user.staffId,
   department: user.department,
-  createdAt: user.createdAt,
-  updatedAt: user.updatedAt,
 });
 
 export const registerUser = async (payload: RegisterBody) => {
@@ -134,8 +137,14 @@ export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
   }
 
   if (user.isVerified) {
+    const token = signAccessToken({
+      sub: user.id,
+      role: user.role,
+    });
+
     return {
       message: 'Account is already verified.',
+      token,
       user: toPublicUser(user),
     };
   }
@@ -160,8 +169,14 @@ export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
     },
   });
 
+  const token = signAccessToken({
+    sub: updatedUser.id,
+    role: updatedUser.role,
+  });
+
   return {
     message: 'Account verified successfully.',
+    token,
     user: toPublicUser(updatedUser),
   };
 };
@@ -218,6 +233,22 @@ export const loginUser = async (payload: LoginBody) => {
     throw createError(
       403,
       'Account is not verified. Verify your email OTP first.',
+    );
+  }
+
+  const approvalRequiredRoles: Role[] = [
+    Role.SCHOOL_ADMIN,
+    Role.LECTURER,
+    Role.HOSTEL_ADMIN,
+  ];
+
+  if (
+    approvalRequiredRoles.includes(user.role) &&
+    user.approvalStatus !== 'VERIFIED'
+  ) {
+    throw createError(
+      403,
+      'Account approval is required before login access is granted.',
     );
   }
 

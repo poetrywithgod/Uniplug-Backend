@@ -44,7 +44,9 @@ const createStaffAccount = async (
     throw createError(400, 'School admin account is not linked to a tenant.');
   }
 
-  const tenant = await prisma.tenant.findUnique({ where: { id: actor.tenantId } });
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: actor.tenantId },
+  });
 
   if (!tenant) {
     throw createError(404, 'Tenant not found for current school admin.');
@@ -172,7 +174,10 @@ export const createHostelAdmin = async (
   return createStaffAccount(payload, 'HOSTEL_ADMIN', actor);
 };
 
-export const verifyStaffAccount = async (userId: string, actor: ActorContext) => {
+export const verifyStaffAccount = async (
+  userId: string,
+  actor: ActorContext,
+) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
 
   if (!user || (user.role !== 'LECTURER' && user.role !== 'HOSTEL_ADMIN')) {
