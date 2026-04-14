@@ -273,7 +273,10 @@ export const resetPassword = async (payload: ResetPasswordBody) => {
   }
 
   if (!user.resetOtpHash || !user.resetOtpExpiresAt) {
-    throw createError(400, 'No active reset OTP found. Please request a new code.');
+    throw createError(
+      400,
+      'No active reset OTP found. Please request a new code.',
+    );
   }
 
   const otpHash = hashOtpCode(payload.otpCode);
@@ -295,6 +298,7 @@ export const resetPassword = async (payload: ResetPasswordBody) => {
   });
 
   return {
-    message: 'Password reset successful. You can now log in with your new password.',
+    message:
+      'Password reset successful. You can now log in with your new password.',
   };
 };

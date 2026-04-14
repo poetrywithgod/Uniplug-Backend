@@ -51,7 +51,9 @@ export const signAccessToken = (payload: {
   });
 };
 
-export const verifyAccessToken = (token: string): { sub: string; role: string } => {
+export const verifyAccessToken = (
+  token: string,
+): { sub: string; role: string } => {
   if (!JWT_SECRET) {
     throw new Error('JWT_SECRET is not configured');
   }
