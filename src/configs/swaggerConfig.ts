@@ -7,7 +7,7 @@ const swaggerSpec = {
     title: 'Uniplug API',
     version: '1.0.0',
     description:
-      'API documentation for Uniplug authentication, admin onboarding, and shared metadata services.',
+      'API documentation for Uniplug authentication, tenant onboarding, and role approval governance.',
   },
   servers: [
     {
@@ -16,18 +16,10 @@ const swaggerSpec = {
     },
   ],
   tags: [
-    {
-      name: 'Auth',
-      description: 'Authentication and account verification endpoints',
-    },
-    {
-      name: 'Admin',
-      description: 'Admin-only onboarding endpoints for staff accounts',
-    },
-    {
-      name: 'Meta',
-      description: 'Shared read-only metadata endpoints',
-    },
+    { name: 'Auth', description: 'Authentication and OTP flows' },
+    { name: 'SuperAdmin', description: 'Platform-level onboarding and school-admin governance' },
+    { name: 'SchoolAdmin', description: 'School-admin staff onboarding and governance' },
+    { name: 'Meta', description: 'Shared read-only metadata endpoints' },
   ],
   components: {
     securitySchemes: {
@@ -42,62 +34,33 @@ const swaggerSpec = {
     '/auth/register': {
       post: {
         tags: ['Auth'],
-        summary: 'Register a new user account',
-        description:
-          'Creates an unverified account for applicant or parent role and sends OTP to email for verification.',
+        summary: 'Register applicant or parent',
         requestBody: {
           required: true,
           content: {
             'application/json': {
               schema: {
                 type: 'object',
-                required: [
-                  'firstName',
-                  'lastName',
-                  'email',
-                  'phoneNumber',
-                  'password',
-                  'role',
-                ],
+                required: ['firstName', 'lastName', 'email', 'phoneNumber', 'password', 'role'],
                 properties: {
                   firstName: { type: 'string', example: 'Jane' },
                   lastName: { type: 'string', example: 'Doe' },
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'jane@uniplug.com',
-                  },
+                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
                   phoneNumber: { type: 'string', example: '+2348012345678' },
                   password: { type: 'string', example: 'Secure123' },
-                  role: {
-                    type: 'string',
-                    enum: ['applicant', 'parent'],
-                    example: 'applicant',
-                  },
+                  role: { type: 'string', enum: ['applicant', 'parent'], example: 'applicant' },
                 },
               },
             },
           },
         },
-        responses: {
-          201: {
-            description: 'Registration successful and OTP sent',
-          },
-          400: {
-            description: 'Validation error',
-          },
-          409: {
-            description: 'Email already registered',
-          },
-        },
+        responses: { 201: { description: 'Registration accepted, OTP sent' } },
       },
     },
     '/auth/verify-otp': {
       post: {
         tags: ['Auth'],
-        summary: 'Verify registration OTP',
-        description:
-          'Verifies the OTP sent to email and activates the account.',
+        summary: 'Verify email OTP',
         requestBody: {
           required: true,
           content: {
@@ -106,72 +69,20 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email', 'otpCode'],
                 properties: {
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'jane@uniplug.com',
-                  },
+                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
                   otpCode: { type: 'string', example: '123456' },
                 },
               },
             },
           },
         },
-        responses: {
-          200: {
-            description: 'Account verified',
-          },
-          400: {
-            description: 'Invalid or expired OTP',
-          },
-          404: {
-            description: 'User not found',
-          },
-        },
-      },
-    },
-    '/auth/resend-otp': {
-      post: {
-        tags: ['Auth'],
-        summary: 'Resend OTP code',
-        description: 'Generates and sends a new OTP for unverified account.',
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['email'],
-                properties: {
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'jane@uniplug.com',
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: {
-            description: 'OTP resent',
-          },
-          400: {
-            description: 'Already verified or invalid request',
-          },
-          404: {
-            description: 'User not found',
-          },
-        },
+        responses: { 200: { description: 'OTP verified and token issued' } },
       },
     },
     '/auth/login': {
       post: {
         tags: ['Auth'],
         summary: 'Login user',
-        description:
-          'Logs in a verified user and returns a signed access token.',
         requestBody: {
           required: true,
           content: {
@@ -180,11 +91,7 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email', 'password'],
                 properties: {
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'jane@uniplug.com',
-                  },
+                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
@@ -192,23 +99,15 @@ const swaggerSpec = {
           },
         },
         responses: {
-          200: {
-            description: 'Login successful',
-          },
-          401: {
-            description: 'Invalid credentials',
-          },
-          403: {
-            description: 'Account not verified',
-          },
+          200: { description: 'Login successful' },
+          403: { description: 'Account not approved or not verified' },
         },
       },
     },
     '/auth/forgot-password': {
       post: {
         tags: ['Auth'],
-        summary: 'Request password reset OTP',
-        description: 'Sends OTP to email for password reset if account exists.',
+        summary: 'Request reset OTP',
         requestBody: {
           required: true,
           content: {
@@ -217,28 +116,19 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email'],
                 properties: {
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'jane@uniplug.com',
-                  },
+                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
                 },
               },
             },
           },
         },
-        responses: {
-          200: {
-            description: 'Reset OTP process started',
-          },
-        },
+        responses: { 200: { description: 'Reset OTP flow started' } },
       },
     },
     '/auth/reset-password': {
       post: {
         tags: ['Auth'],
         summary: 'Reset password with OTP',
-        description: 'Resets user password using valid OTP.',
         requestBody: {
           required: true,
           content: {
@@ -247,11 +137,7 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['email', 'otpCode', 'newPassword'],
                 properties: {
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'jane@uniplug.com',
-                  },
+                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
                   otpCode: { type: 'string', example: '123456' },
                   newPassword: { type: 'string', example: 'NewSecure123' },
                 },
@@ -259,22 +145,13 @@ const swaggerSpec = {
             },
           },
         },
-        responses: {
-          200: {
-            description: 'Password reset successful',
-          },
-          400: {
-            description: 'Invalid or expired OTP',
-          },
-        },
+        responses: { 200: { description: 'Password reset successful' } },
       },
     },
-    '/admin/lecturers': {
+    '/super-admin/tenants': {
       post: {
-        tags: ['Admin'],
-        summary: 'Create lecturer account',
-        description:
-          'Creates lecturer account and emails login details + verification OTP.',
+        tags: ['SuperAdmin'],
+        summary: 'Create tenant (school)',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -282,44 +159,83 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: [
-                  'fullName',
-                  'staffId',
-                  'email',
-                  'department',
-                  'password',
-                ],
+                required: ['schoolName', 'schoolId', 'email', 'school', 'address', 'postalCode'],
+                properties: {
+                  schoolName: { type: 'string', example: 'University of Lagos' },
+                  schoolId: { type: 'string', example: 'UPH-009' },
+                  email: { type: 'string', format: 'email', example: 'info@unilag.edu.ng' },
+                  school: { type: 'string', example: 'Unilag' },
+                  address: { type: 'string', example: '1 University Road, Akoka' },
+                  postalCode: { type: 'string', example: '101017' },
+                },
+              },
+            },
+          },
+        },
+        responses: { 201: { description: 'Tenant created' } },
+      },
+    },
+    '/super-admin/school-admins': {
+      post: {
+        tags: ['SuperAdmin'],
+        summary: 'Create school admin account',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['fullName', 'schoolId', 'email', 'school', 'password'],
                 properties: {
                   fullName: { type: 'string', example: 'Fatima Ibrahim' },
-                  staffId: { type: 'string', example: 'Y-SKMS' },
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'fatima@uniplug.com',
-                  },
-                  department: { type: 'string', example: 'Microbiology' },
+                  schoolId: { type: 'string', example: 'UPH-009' },
+                  email: { type: 'string', format: 'email', example: 'demo@uniplug.com' },
+                  school: { type: 'string', example: 'Uniport' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
             },
           },
         },
-        responses: {
-          201: {
-            description: 'Lecturer account created',
-          },
-          403: {
-            description: 'Admin role required',
-          },
-        },
+        responses: { 201: { description: 'School admin submitted (pending approval)' } },
       },
     },
-    '/admin/hostel-admins': {
+    '/super-admin/school-admins/{userId}/verify': {
+      patch: {
+        tags: ['SuperAdmin'],
+        summary: 'Verify school admin',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'School admin verified' } },
+      },
+    },
+    '/super-admin/school-admins/{userId}/reject': {
+      patch: {
+        tags: ['SuperAdmin'],
+        summary: 'Reject school admin',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  remark: { type: 'string', example: 'Incomplete compliance documents' },
+                },
+              },
+            },
+          },
+        },
+        responses: { 200: { description: 'School admin rejected' } },
+      },
+    },
+    '/admin/lecturers': {
       post: {
-        tags: ['Admin'],
-        summary: 'Create hostel admin account',
-        description:
-          'Creates hostel admin account and emails login details + verification OTP.',
+        tags: ['SchoolAdmin'],
+        summary: 'Create lecturer account',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -327,21 +243,37 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: [
-                  'fullName',
-                  'staffId',
-                  'email',
-                  'department',
-                  'password',
-                ],
+                required: ['fullName', 'staffId', 'email', 'department', 'password'],
                 properties: {
-                  fullName: { type: 'string', example: 'Fatima Ibrahim' },
-                  staffId: { type: 'string', example: 'H-A112' },
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'hostel-admin@uniplug.com',
-                  },
+                  fullName: { type: 'string', example: 'Samuel Okonkwo' },
+                  staffId: { type: 'string', example: 'L-1002' },
+                  email: { type: 'string', format: 'email', example: 'samuel@uniplug.com' },
+                  department: { type: 'string', example: 'Computer Science' },
+                  password: { type: 'string', example: 'Secure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: { 201: { description: 'Lecturer submitted (pending school-admin approval)' } },
+      },
+    },
+    '/admin/hostel-admins': {
+      post: {
+        tags: ['SchoolAdmin'],
+        summary: 'Create hostel admin account',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['fullName', 'staffId', 'email', 'department', 'password'],
+                properties: {
+                  fullName: { type: 'string', example: 'Amaka Eze' },
+                  staffId: { type: 'string', example: 'H-1002' },
+                  email: { type: 'string', format: 'email', example: 'amaka@uniplug.com' },
                   department: { type: 'string', example: 'Hostel Operations' },
                   password: { type: 'string', example: 'Secure123' },
                 },
@@ -349,27 +281,45 @@ const swaggerSpec = {
             },
           },
         },
-        responses: {
-          201: {
-            description: 'Hostel admin account created',
-          },
-          403: {
-            description: 'Admin role required',
+        responses: { 201: { description: 'Hostel admin submitted (pending school-admin approval)' } },
+      },
+    },
+    '/admin/staff/{userId}/verify': {
+      patch: {
+        tags: ['SchoolAdmin'],
+        summary: 'Verify lecturer/hostel admin',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Staff verified' } },
+      },
+    },
+    '/admin/staff/{userId}/reject': {
+      patch: {
+        tags: ['SchoolAdmin'],
+        summary: 'Reject lecturer/hostel admin',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  remark: { type: 'string', example: 'Invalid staff metadata' },
+                },
+              },
+            },
           },
         },
+        responses: { 200: { description: 'Staff rejected' } },
       },
     },
     '/meta/departments': {
       get: {
         tags: ['Meta'],
         summary: 'Get Nigerian university departments',
-        description:
-          'Returns a curated JSON list of Nigerian university academic departments.',
-        responses: {
-          200: {
-            description: 'Departments list returned',
-          },
-        },
+        responses: { 200: { description: 'Departments list returned' } },
       },
     },
   },
