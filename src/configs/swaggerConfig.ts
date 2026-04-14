@@ -7,7 +7,7 @@ const swaggerSpec = {
     title: 'Uniplug API',
     version: '1.0.0',
     description:
-      'API documentation for Uniplug authentication module. Registration requires OTP verification before login.',
+      'API documentation for Uniplug authentication, admin onboarding, and shared metadata services.',
   },
   servers: [
     {
@@ -20,7 +20,24 @@ const swaggerSpec = {
       name: 'Auth',
       description: 'Authentication and account verification endpoints',
     },
+    {
+      name: 'Admin',
+      description: 'Admin-only onboarding endpoints for staff accounts',
+    },
+    {
+      name: 'Meta',
+      description: 'Shared read-only metadata endpoints',
+    },
   ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+    },
+  },
   paths: {
     '/auth/register': {
       post: {
@@ -183,6 +200,143 @@ const swaggerSpec = {
           },
           403: {
             description: 'Account not verified',
+          },
+        },
+      },
+    },
+    '/auth/forgot-password': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Request password reset OTP',
+        description: 'Sends OTP to email for password reset if account exists.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['email'],
+                properties: {
+                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Reset OTP process started',
+          },
+        },
+      },
+    },
+    '/auth/reset-password': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Reset password with OTP',
+        description: 'Resets user password using valid OTP.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['email', 'otpCode', 'newPassword'],
+                properties: {
+                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  otpCode: { type: 'string', example: '123456' },
+                  newPassword: { type: 'string', example: 'NewSecure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Password reset successful',
+          },
+          400: {
+            description: 'Invalid or expired OTP',
+          },
+        },
+      },
+    },
+    '/admin/lecturers': {
+      post: {
+        tags: ['Admin'],
+        summary: 'Create lecturer account',
+        description: 'Creates lecturer account and emails login details + verification OTP.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['fullName', 'staffId', 'email', 'department', 'password'],
+                properties: {
+                  fullName: { type: 'string', example: 'Fatima Ibrahim' },
+                  staffId: { type: 'string', example: 'Y-SKMS' },
+                  email: { type: 'string', format: 'email', example: 'fatima@uniplug.com' },
+                  department: { type: 'string', example: 'Microbiology' },
+                  password: { type: 'string', example: 'Secure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Lecturer account created',
+          },
+          403: {
+            description: 'Admin role required',
+          },
+        },
+      },
+    },
+    '/admin/hostel-admins': {
+      post: {
+        tags: ['Admin'],
+        summary: 'Create hostel admin account',
+        description: 'Creates hostel admin account and emails login details + verification OTP.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['fullName', 'staffId', 'email', 'department', 'password'],
+                properties: {
+                  fullName: { type: 'string', example: 'Fatima Ibrahim' },
+                  staffId: { type: 'string', example: 'H-A112' },
+                  email: { type: 'string', format: 'email', example: 'hostel-admin@uniplug.com' },
+                  department: { type: 'string', example: 'Hostel Operations' },
+                  password: { type: 'string', example: 'Secure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Hostel admin account created',
+          },
+          403: {
+            description: 'Admin role required',
+          },
+        },
+      },
+    },
+    '/meta/departments': {
+      get: {
+        tags: ['Meta'],
+        summary: 'Get Nigerian university departments',
+        description: 'Returns a curated JSON list of Nigerian university academic departments.',
+        responses: {
+          200: {
+            description: 'Departments list returned',
           },
         },
       },

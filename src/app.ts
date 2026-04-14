@@ -34,7 +34,8 @@ app.get('/', async (req: Request, res: Response, next: NextFunction) => {
     status: 'success',
     name: 'Uniplug API',
     version: 'v1',
-    description: 'Backend API for Uniplug authentication, admin onboarding, and shared metadata services.',
+    description:
+      'Backend API for Uniplug authentication, admin onboarding, and shared metadata services.',
     health: '/health',
     baseUrl: '/api/v1',
     docs: '/api-docs',
