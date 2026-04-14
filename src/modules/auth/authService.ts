@@ -1,7 +1,11 @@
 import createError from 'http-errors';
 
 import prisma from '../../configs/prismaConfig';
-import { sendOtpEmail, resendOtpEmail } from '../../utils/email';
+import {
+  sendOtpEmail,
+  resendOtpEmail,
+  sendPasswordResetEmail,
+} from '../../utils/email';
 import {
   comparePassword,
   generateOtpCode,
@@ -16,9 +20,11 @@ import {
   normalizePhoneNumber,
 } from '../../utils/sanitize';
 import {
+  ForgotPasswordBody,
   LoginBody,
   PublicUser,
   RegisterBody,
+  ResetPasswordBody,
   ResendOtpBody,
   VerifyOtpBody,
 } from '../../types/auth';
@@ -34,9 +40,11 @@ const toPublicUser = (user: {
   firstName: string;
   lastName: string;
   email: string;
-  phoneNumber: string;
+  phoneNumber: string | null;
   role: Role;
   isVerified: boolean;
+  staffId?: string | null;
+  department?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }): PublicUser => ({
@@ -47,6 +55,8 @@ const toPublicUser = (user: {
   phoneNumber: user.phoneNumber,
   role: user.role,
   isVerified: user.isVerified,
+  staffId: user.staffId,
+  department: user.department,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
@@ -220,5 +230,71 @@ export const loginUser = async (payload: LoginBody) => {
     message: 'Login successful.',
     token,
     user: toPublicUser(user),
+  };
+};
+
+export const forgotPassword = async (payload: ForgotPasswordBody) => {
+  const email = normalizeEmail(payload.email);
+
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    return {
+      message:
+        'If an account exists with this email, a password reset OTP has been sent.',
+    };
+  }
+
+  const otpCode = generateOtpCode();
+
+  await prisma.user.update({
+    where: { email },
+    data: {
+      resetOtpHash: hashOtpCode(otpCode),
+      resetOtpExpiresAt: getOtpExpiryDate(),
+    },
+  });
+
+  await sendPasswordResetEmail(user.firstName, email, otpCode);
+
+  return {
+    message:
+      'If an account exists with this email, a password reset OTP has been sent.',
+  };
+};
+
+export const resetPassword = async (payload: ResetPasswordBody) => {
+  const email = normalizeEmail(payload.email);
+
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    throw createError(404, 'User not found.');
+  }
+
+  if (!user.resetOtpHash || !user.resetOtpExpiresAt) {
+    throw createError(400, 'No active reset OTP found. Please request a new code.');
+  }
+
+  const otpHash = hashOtpCode(payload.otpCode);
+  const isExpired = user.resetOtpExpiresAt.getTime() < Date.now();
+
+  if (isExpired || otpHash !== user.resetOtpHash) {
+    throw createError(400, 'Invalid or expired OTP code.');
+  }
+
+  const passwordHash = await hashPassword(payload.newPassword);
+
+  await prisma.user.update({
+    where: { email },
+    data: {
+      passwordHash,
+      resetOtpHash: null,
+      resetOtpExpiresAt: null,
+    },
+  });
+
+  return {
+    message: 'Password reset successful. You can now log in with your new password.',
   };
 };

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
 import {
   JWT_EXPIRES_IN,
@@ -49,4 +49,21 @@ export const signAccessToken = (payload: {
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: expiresIn as jwt.SignOptions['expiresIn'],
   });
+};
+
+export const verifyAccessToken = (token: string): { sub: string; role: string } => {
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured');
+  }
+
+  const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+
+  if (!decoded?.sub || typeof decoded.sub !== 'string' || !decoded.role) {
+    throw new Error('Invalid token payload');
+  }
+
+  return {
+    sub: decoded.sub,
+    role: String(decoded.role),
+  };
 };
