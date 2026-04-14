@@ -34,3 +34,7 @@ export const createHostelAdminSchema = staffSchema.transform((data) => ({
   department: data.department.trim(),
   staffId: data.staffId.trim(),
 }));
+
+export const reviewStaffSchema = z.object({
+  remark: z.string().max(250).optional(),
+});
