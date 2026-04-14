@@ -18,6 +18,8 @@ enum Role {
   APPLICANT
   PARENT
   ADMIN
+  LECTURER
+  HOSTEL_ADMIN
 }
 
 model User {
@@ -25,12 +27,16 @@ model User {
   firstName         String
   lastName          String
   email             String    @unique
-  phoneNumber       String
+  phoneNumber       String?
+  staffId           String?
+  department        String?
   passwordHash      String
   role              Role
   isVerified        Boolean   @default(false)
   emailOtpHash      String?
   emailOtpExpiresAt DateTime?
+  resetOtpHash      String?
+  resetOtpExpiresAt DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }

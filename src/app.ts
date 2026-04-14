@@ -2,7 +2,9 @@ import express, { NextFunction, Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
 import cors from 'cors';
 
+import adminRoutes from './modules/admin/adminRoute';
 import authRoutes from './modules/auth/authRoute';
+import metaRoutes from './modules/meta/metaRoute';
 import catchAll404Errors from './middlewares/catchAll404Errors';
 import globalErrorHandler from './middlewares/errorHandler';
 import { healthCheck } from './utils/health';
@@ -32,19 +34,22 @@ app.get('/', async (req: Request, res: Response, next: NextFunction) => {
     status: 'success',
     name: 'Uniplug API',
     version: 'v1',
-    description:
-      'Backend API for Uniplug authentication and account verification.',
+    description: 'Backend API for Uniplug authentication, admin onboarding, and shared metadata services.',
     health: '/health',
     baseUrl: '/api/v1',
     docs: '/api-docs',
     endpoints: {
       auth: '/api/v1/auth',
+      admin: '/api/v1/admin',
+      meta: '/api/v1/meta',
     },
   });
 });
 
 app.use('/health', healthCheck);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/meta', metaRoutes);
 
 app.get('/debug-sentry', (req, res) => {
   throw new Error('My first Sentry error!');
