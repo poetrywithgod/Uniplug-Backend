@@ -1,7 +1,12 @@
 import createError from 'http-errors';
 
 import prisma from '../../configs/prismaConfig';
-import { generateOtpCode, getOtpExpiryDate, hashOtpCode, hashPassword } from '../auth/authSecurity';
+import {
+  generateOtpCode,
+  getOtpExpiryDate,
+  hashOtpCode,
+  hashPassword,
+} from '../auth/authSecurity';
 import { sendSchoolAdminOnboardingEmail } from '../../utils/email';
 
 interface CreateTenantPayload {
@@ -21,7 +26,9 @@ interface CreateSchoolAdminPayload {
   password: string;
 }
 
-const splitFullName = (fullName: string): { firstName: string; lastName: string } => {
+const splitFullName = (
+  fullName: string,
+): { firstName: string; lastName: string } => {
   const cleaned = fullName.trim().replace(/\s+/g, ' ');
   const [firstName, ...rest] = cleaned.split(' ');
 
@@ -39,7 +46,10 @@ export const createTenant = async (payload: CreateTenantPayload) => {
   });
 
   if (existingTenant) {
-    throw createError(409, 'Tenant with the provided school ID or email already exists.');
+    throw createError(
+      409,
+      'Tenant with the provided school ID or email already exists.',
+    );
   }
 
   const tenant = await prisma.tenant.create({
@@ -79,7 +89,10 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
   }
 
   if (tenant.school !== payload.school) {
-    throw createError(400, 'School does not match the tenant record for this schoolId.');
+    throw createError(
+      400,
+      'School does not match the tenant record for this schoolId.',
+    );
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -91,7 +104,9 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
   const { firstName, lastName } = splitFullName(payload.fullName);
 
   const user =
-    existingUser && existingUser.role === 'SCHOOL_ADMIN' && existingUser.approvalStatus === 'REJECTED'
+    existingUser &&
+    existingUser.role === 'SCHOOL_ADMIN' &&
+    existingUser.approvalStatus === 'REJECTED'
       ? await prisma.user.update({
           where: { email: payload.email },
           data: {
@@ -120,35 +135,35 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
           },
         })
       : existingUser
-      ? (() => {
-          throw createError(409, 'A user with this email already exists.');
-        })()
-      : await prisma.user.create({
-          data: {
-            firstName,
-            lastName,
-            email: payload.email,
-            passwordHash,
-            role: 'SCHOOL_ADMIN',
-            school: payload.school,
-            schoolId: payload.schoolId,
-            tenantId: tenant.id,
-            isVerified: false,
-            approvalStatus: 'PENDING',
-            emailOtpHash: hashOtpCode(otpCode),
-            emailOtpExpiresAt: getOtpExpiryDate(),
-          },
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-            role: true,
-            school: true,
-            schoolId: true,
-            isVerified: true,
-            approvalStatus: true,
-          },
-        });
+        ? (() => {
+            throw createError(409, 'A user with this email already exists.');
+          })()
+        : await prisma.user.create({
+            data: {
+              firstName,
+              lastName,
+              email: payload.email,
+              passwordHash,
+              role: 'SCHOOL_ADMIN',
+              school: payload.school,
+              schoolId: payload.schoolId,
+              tenantId: tenant.id,
+              isVerified: false,
+              approvalStatus: 'PENDING',
+              emailOtpHash: hashOtpCode(otpCode),
+              emailOtpExpiresAt: getOtpExpiryDate(),
+            },
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+              school: true,
+              schoolId: true,
+              isVerified: true,
+              approvalStatus: true,
+            },
+          });
 
   await sendSchoolAdminOnboardingEmail({
     name: payload.fullName,
