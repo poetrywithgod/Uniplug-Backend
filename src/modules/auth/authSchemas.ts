@@ -60,3 +60,25 @@ export const loginSchema = z.object({
     .transform(normalizeEmail),
   password: z.string().min(1, 'Password is required'),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .email('Provide a valid email address')
+    .transform(normalizeEmail),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z
+    .string()
+    .email('Provide a valid email address')
+    .transform(normalizeEmail),
+  otpCode: z.string().regex(/^\d{6}$/, 'OTP code must be 6 digits'),
+  newPassword: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+      'Password must include uppercase, lowercase, and number',
+    ),
+});
