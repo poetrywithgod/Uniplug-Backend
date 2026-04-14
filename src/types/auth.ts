@@ -34,15 +34,15 @@ export interface ResetPasswordBody {
 }
 
 export interface PublicUser {
-  id: string;
   firstName: string;
   lastName: string;
   email: string;
   phoneNumber: string | null;
   role: string;
   isVerified: boolean;
+  school?: string | null;
+  schoolId?: string | null;
+  approvalStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
   staffId?: string | null;
   department?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 }
