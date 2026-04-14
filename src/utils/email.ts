@@ -5,7 +5,7 @@ import { mailLog } from '../configs/loggerConfig';
 import { escapeHtml } from './sanitize';
 
 const BRAND_LOGO_URL =
-    'https://asset.cloudinary.com/dpesanzkk/a992949df0a7f3b87f30942c68f5e6ea';
+  'https://asset.cloudinary.com/dpesanzkk/a992949df0a7f3b87f30942c68f5e6ea';
 
 // Create email transporter using Gmail service
 const createEmailTransporter = () => {
@@ -437,27 +437,27 @@ export const sendPasswordResetEmail = async (
 };
 
 export const sendStaffOnboardingEmail = async (payload: {
-    name: string;
-    email: string;
-    password: string;
-    role: 'LECTURER' | 'HOSTEL_ADMIN';
-    staffId: string;
-    department: string;
-    otpCode: string;
+  name: string;
+  email: string;
+  password: string;
+  role: 'LECTURER' | 'HOSTEL_ADMIN';
+  staffId: string;
+  department: string;
+  otpCode: string;
 }) => {
-    const transporter = createEmailTransporter();
+  const transporter = createEmailTransporter();
 
-    const safeName = escapeHtml(payload.name);
-    const safeStaffId = escapeHtml(payload.staffId);
-    const safeDepartment = escapeHtml(payload.department);
-    const safePassword = escapeHtml(payload.password);
-    const roleLabel = payload.role === 'LECTURER' ? 'Lecturer' : 'Hostel Admin';
+  const safeName = escapeHtml(payload.name);
+  const safeStaffId = escapeHtml(payload.staffId);
+  const safeDepartment = escapeHtml(payload.department);
+  const safePassword = escapeHtml(payload.password);
+  const roleLabel = payload.role === 'LECTURER' ? 'Lecturer' : 'Hostel Admin';
 
-    const mailOptions = {
-        from: `Uniplug Team <${EMAIL_USERNAME}>`,
-        to: payload.email,
-        subject: `${roleLabel} Account Created - Uniplug Login Details`,
-        html: `
+  const mailOptions = {
+    from: `Uniplug Team <${EMAIL_USERNAME}>`,
+    to: payload.email,
+    subject: `${roleLabel} Account Created - Uniplug Login Details`,
+    html: `
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -508,12 +508,16 @@ export const sendStaffOnboardingEmail = async (payload: {
             </body>
             </html>
         `,
-    };
+  };
 
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        mailLog.info(`Staff onboarding email sent to ${payload.email}: ${info.response}`);
-    } catch (error) {
-        mailLog.error(`Error sending staff onboarding email to ${payload.email}: ${error}`);
-    }
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    mailLog.info(
+      `Staff onboarding email sent to ${payload.email}: ${info.response}`,
+    );
+  } catch (error) {
+    mailLog.error(
+      `Error sending staff onboarding email to ${payload.email}: ${error}`,
+    );
+  }
 };
