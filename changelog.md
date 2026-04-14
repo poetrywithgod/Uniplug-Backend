@@ -3,12 +3,63 @@
 ## Date
 
 - 2026-04-10
+- 2026-04-14
+
+## Latest Update (Tenant Governance + Approval Hierarchy)
+
+- Refactored platform to a multi-tenant governance model with dedicated tenant records.
+- Added `Tenant` model and `ApprovalStatus` enum (`PENDING`, `VERIFIED`, `REJECTED`) in Prisma schema.
+- Updated role model to support hierarchy:
+  - `SUPER_ADMIN`
+  - `SCHOOL_ADMIN`
+  - `LECTURER`
+  - `HOSTEL_ADMIN`
+  - `APPLICANT`
+  - `PARENT`
+- Extended user domain with tenant/governance fields:
+  - `tenantId`
+  - `school`
+  - `schoolId`
+  - `approvalStatus`
+  - `approvalRemark`
+- Added new super-admin module endpoints:
+  - `POST /api/v1/super-admin/tenants`
+  - `POST /api/v1/super-admin/school-admins`
+  - `PATCH /api/v1/super-admin/school-admins/:userId/verify`
+  - `PATCH /api/v1/super-admin/school-admins/:userId/reject`
+- Refactored school-admin module behavior:
+  - school admins create lecturer/hostel-admin accounts under their tenant
+  - school admins verify/reject lecturer and hostel-admin accounts
+  - rejected lecturer/hostel-admin and school-admin accounts can be resubmitted
+- Enforced approval gating in auth flow:
+  - OTP verification remains required
+  - privileged roles (`SCHOOL_ADMIN`, `LECTURER`, `HOSTEL_ADMIN`) are blocked from login actions until `approvalStatus = VERIFIED`
+- Updated onboarding email templates for governance context:
+  - added school-admin onboarding email
+  - included school and schoolId details in staff onboarding
+- Replaced Swagger spec to align with new hierarchy and endpoint set (`Auth`, `SuperAdmin`, `SchoolAdmin`, `Meta`).
+- Build verification:
+  - `npm run build` passes after controller param typing fixes.
+- Remaining environment blocker:
+  - database schema push still depends on valid MongoDB credentials (`SCRAM bad auth` issue remains external to source changes).
 
 ## Latest Update
 
 - Updated root API intro response to always expose module routes and a short API description.
 - Registered auth and task modules explicitly in the root response endpoint list.
 - Retried MongoDB schema sync with Prisma; push is still blocked by Atlas authentication failure.
+
+## Latest Update (Email Logo Rendering)
+
+- Updated email templates to use a direct public Cloudinary delivery URL (`res.cloudinary.com`) for the brand logo.
+- This resolves logo rendering issues in mailbox clients that do not render `asset.cloudinary.com` links reliably.
+
+## Latest Update (Brand Colors)
+
+- Updated all email templates to use the requested brand palette only:
+  - `#0c241f`
+  - `#ffffff`
+- Applied the palette consistently to body, containers, OTP blocks, notes, borders, and footer text.
 
 ## Latest Update (Swagger + Task Removal)
 
