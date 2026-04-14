@@ -32,7 +32,9 @@ export const onboardHostelAdmin = catchAsync(
 
 export const approveStaff = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
-    const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+    const userId = Array.isArray(req.params.userId)
+      ? req.params.userId[0]
+      : req.params.userId;
     const result = await verifyStaffAccount(userId, res.locals.user);
 
     res.status(200).json({
@@ -44,7 +46,9 @@ export const approveStaff = catchAsync(
 
 export const declineStaff = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
-    const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+    const userId = Array.isArray(req.params.userId)
+      ? req.params.userId[0]
+      : req.params.userId;
     const result = await rejectStaffAccount(
       userId,
       res.locals.user,

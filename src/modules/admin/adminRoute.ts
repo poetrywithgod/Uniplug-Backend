@@ -29,6 +29,10 @@ router.post(
   onboardHostelAdmin,
 );
 router.patch('/staff/:userId/verify', approveStaff);
-router.patch('/staff/:userId/reject', validateRequest(reviewStaffSchema), declineStaff);
+router.patch(
+  '/staff/:userId/reject',
+  validateRequest(reviewStaffSchema),
+  declineStaff,
+);
 
 export default router;
