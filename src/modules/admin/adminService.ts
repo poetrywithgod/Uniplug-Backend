@@ -1,7 +1,12 @@
 import createError from 'http-errors';
 
 import prisma from '../../configs/prismaConfig';
-import { hashOtpCode, hashPassword, generateOtpCode, getOtpExpiryDate } from '../auth/authSecurity';
+import {
+  hashOtpCode,
+  hashPassword,
+  generateOtpCode,
+  getOtpExpiryDate,
+} from '../auth/authSecurity';
 import { sendStaffOnboardingEmail } from '../../utils/email';
 
 interface CreateStaffPayload {
@@ -12,7 +17,9 @@ interface CreateStaffPayload {
   password: string;
 }
 
-const splitFullName = (fullName: string): { firstName: string; lastName: string } => {
+const splitFullName = (
+  fullName: string,
+): { firstName: string; lastName: string } => {
   const cleaned = fullName.trim().replace(/\s+/g, ' ');
   const [firstName, ...rest] = cleaned.split(' ');
   return {
@@ -25,7 +32,9 @@ const createStaffAccount = async (
   payload: CreateStaffPayload,
   role: 'LECTURER' | 'HOSTEL_ADMIN',
 ) => {
-  const existingByEmail = await prisma.user.findUnique({ where: { email: payload.email } });
+  const existingByEmail = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
 
   if (existingByEmail) {
     throw createError(409, 'A user with this email already exists.');
