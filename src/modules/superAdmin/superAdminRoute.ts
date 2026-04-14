@@ -19,8 +19,16 @@ const router = express.Router();
 router.use(requireAuth, requireRole('SUPER_ADMIN'));
 
 router.post('/tenants', validateRequest(createTenantSchema), onboardTenant);
-router.post('/school-admins', validateRequest(createSchoolAdminSchema), onboardSchoolAdmin);
+router.post(
+  '/school-admins',
+  validateRequest(createSchoolAdminSchema),
+  onboardSchoolAdmin,
+);
 router.patch('/school-admins/:userId/verify', approveSchoolAdmin);
-router.patch('/school-admins/:userId/reject', validateRequest(reviewSchoolAdminSchema), declineSchoolAdmin);
+router.patch(
+  '/school-admins/:userId/reject',
+  validateRequest(reviewSchoolAdminSchema),
+  declineSchoolAdmin,
+);
 
 export default router;
