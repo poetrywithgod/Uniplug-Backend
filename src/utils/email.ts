@@ -5,7 +5,7 @@ import { mailLog } from '../configs/loggerConfig';
 import { escapeHtml } from './sanitize';
 
 const BRAND_LOGO_URL =
-    'https://res.cloudinary.com/dpesanzkk/image/upload/q_auto/f_auto/v1776107303/WhatsApp_Image_2026-04-13_at_19.55.27_bh1h5c.jpg';
+  'https://res.cloudinary.com/dpesanzkk/image/upload/q_auto/f_auto/v1776107303/WhatsApp_Image_2026-04-13_at_19.55.27_bh1h5c.jpg';
 const BRAND_PRIMARY = '#0c241f';
 const BRAND_WHITE = '#ffffff';
 
@@ -446,8 +446,8 @@ export const sendStaffOnboardingEmail = async (payload: {
   email: string;
   password: string;
   role: 'LECTURER' | 'HOSTEL_ADMIN';
-    schoolId: string;
-    school: string;
+  schoolId: string;
+  school: string;
   staffId: string;
   department: string;
   otpCode: string;
@@ -458,8 +458,8 @@ export const sendStaffOnboardingEmail = async (payload: {
   const safeStaffId = escapeHtml(payload.staffId);
   const safeDepartment = escapeHtml(payload.department);
   const safePassword = escapeHtml(payload.password);
-    const safeSchoolId = escapeHtml(payload.schoolId);
-    const safeSchool = escapeHtml(payload.school);
+  const safeSchoolId = escapeHtml(payload.schoolId);
+  const safeSchool = escapeHtml(payload.school);
   const roleLabel = payload.role === 'LECTURER' ? 'Lecturer' : 'Hostel Admin';
 
   const mailOptions = {
@@ -534,25 +534,25 @@ export const sendStaffOnboardingEmail = async (payload: {
 };
 
 export const sendSchoolAdminOnboardingEmail = async (payload: {
-    name: string;
-    email: string;
-    password: string;
-    schoolId: string;
-    school: string;
-    otpCode: string;
+  name: string;
+  email: string;
+  password: string;
+  schoolId: string;
+  school: string;
+  otpCode: string;
 }) => {
-    const transporter = createEmailTransporter();
+  const transporter = createEmailTransporter();
 
-    const safeName = escapeHtml(payload.name);
-    const safeSchoolId = escapeHtml(payload.schoolId);
-    const safeSchool = escapeHtml(payload.school);
-    const safePassword = escapeHtml(payload.password);
+  const safeName = escapeHtml(payload.name);
+  const safeSchoolId = escapeHtml(payload.schoolId);
+  const safeSchool = escapeHtml(payload.school);
+  const safePassword = escapeHtml(payload.password);
 
-    const mailOptions = {
-        from: `Uniplug Team <${EMAIL_USERNAME}>`,
-        to: payload.email,
-        subject: 'School Admin Account Created - Uniplug Login Details',
-        html: `
+  const mailOptions = {
+    from: `Uniplug Team <${EMAIL_USERNAME}>`,
+    to: payload.email,
+    subject: 'School Admin Account Created - Uniplug Login Details',
+    html: `
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -603,12 +603,16 @@ export const sendSchoolAdminOnboardingEmail = async (payload: {
             </body>
             </html>
         `,
-    };
+  };
 
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        mailLog.info(`School admin onboarding email sent to ${payload.email}: ${info.response}`);
-    } catch (error) {
-        mailLog.error(`Error sending school admin onboarding email to ${payload.email}: ${error}`);
-    }
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    mailLog.info(
+      `School admin onboarding email sent to ${payload.email}: ${info.response}`,
+    );
+  } catch (error) {
+    mailLog.error(
+      `Error sending school admin onboarding email to ${payload.email}: ${error}`,
+    );
+  }
 };
