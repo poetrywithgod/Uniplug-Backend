@@ -70,6 +70,48 @@ npm run migrate:dev     # Development migrations
 npm run migrate:deploy  # Production migrations
 ```
 
+## Docker (Beginner Friendly)
+
+This project includes a production-ready Docker setup.
+
+### 1) Build the image
+
+```bash
+docker build -t uniplug-backend .
+```
+
+### 2) Run the container
+
+```bash
+docker run --env-file .env -p 8000:8000 --name uniplug-backend uniplug-backend
+```
+
+### 3) Test it
+
+Open:
+
+- `http://localhost:8000/`
+- `http://localhost:8000/health`
+
+### 4) Stop and remove container
+
+```bash
+docker stop uniplug-backend
+docker rm uniplug-backend
+```
+
+### Optional: use Docker Compose
+
+```bash
+docker compose up --build
+```
+
+To stop:
+
+```bash
+docker compose down
+```
+
 ## API Endpoints
 
 ### Health Check
