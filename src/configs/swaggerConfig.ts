@@ -136,7 +136,7 @@ const swaggerSpec = {
     '/auth/forgot-password': {
       post: {
         tags: ['Auth'],
-        summary: 'Request reset OTP',
+        summary: 'Request password reset link',
         requestBody: {
           required: true,
           content: {
@@ -155,27 +155,32 @@ const swaggerSpec = {
             },
           },
         },
-        responses: { 200: { description: 'Reset OTP flow started' } },
+        responses: { 200: { description: 'Password reset link sent to email' } },
       },
     },
-    '/auth/reset-password': {
+    '/auth/reset-password/{token}': {
       post: {
         tags: ['Auth'],
-        summary: 'Reset password with OTP',
+        summary: 'Reset password via email token',
+        parameters: [
+          {
+            name: 'token',
+            in: 'path',
+            required: true,
+            description: 'Reset token received via email link',
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
         requestBody: {
           required: true,
           content: {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['email', 'otpCode', 'newPassword'],
+                required: ['newPassword'],
                 properties: {
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    example: 'jane@uniplug.com',
-                  },
-                  otpCode: { type: 'string', example: '123456' },
                   newPassword: { type: 'string', example: 'NewSecure123' },
                 },
               },
