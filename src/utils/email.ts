@@ -299,14 +299,15 @@ export const resendOtpEmail = async (
 export const sendPasswordResetEmail = async (
   name: string,
   email: string,
-  otpCode: string,
+    resetLink: string,
 ) => {
   const transporter = createEmailTransporter();
+    const safeResetLink = escapeHtml(resetLink);
 
   const mailOptions = {
     from: `Uniplug Team <${EMAIL_USERNAME}>`,
     to: email,
-    subject: 'Reset Your Uniplug Password - OTP Code',
+    subject: 'Reset Your Uniplug Password',
     html: `
         <!DOCTYPE html>
         <html lang="en">
@@ -407,15 +408,18 @@ export const sendPasswordResetEmail = async (
                 <div class="greeting">Hello ${name}!</div>
                 
                 <div class="message">
-                    We received a request to reset your Uniplug account password. Use the code below to proceed:
+                    We received a request to reset your account password. Click the button below to reset it:
                 </div>
                 
-                <div class="otp-box">
-                    <div class="otp-code">${otpCode}</div>
+                <div style="text-align:center; margin: 25px 0;">
+                    <a href="${safeResetLink}" style="background-color:${BRAND_PRIMARY}; color:${BRAND_WHITE}; padding:12px 24px; border-radius:6px; text-decoration:none; display:inline-block; font-weight:bold;">
+                        Reset Password
+                    </a>
                 </div>
                 
                 <div class="note">
-                    This code expires in 10 minutes. Don't share it with anyone.
+                    This link expires soon. If the button doesn't work, copy and paste this link into your browser:
+                    <div style="word-break: break-all; margin-top: 8px;">${safeResetLink}</div>
                 </div>
                 
                 <div class="warning">
@@ -435,9 +439,9 @@ export const sendPasswordResetEmail = async (
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    mailLog.info(`Password reset OTP email sent to ${email}: ${info.response}`);
+        mailLog.info(`Password reset link email sent to ${email}: ${info.response}`);
   } catch (error) {
-    mailLog.error(`Error sending password reset email to ${email}: ${error}`);
+        mailLog.error(`Error sending password reset link email to ${email}: ${error}`);
   }
 };
 
