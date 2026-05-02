@@ -28,8 +28,7 @@ export interface ForgotPasswordBody {
 }
 
 export interface ResetPasswordBody {
-  email: string;
-  otpCode: string;
+  token: string;
   newPassword: string;
 }
 
