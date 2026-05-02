@@ -54,7 +54,7 @@ export const login = catchAsync(
   },
 );
 
-export const forgotPasswordOtp = catchAsync(
+export const forgotPasswordWithToken = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const result = await forgotPassword(req.body);
 
@@ -65,9 +65,13 @@ export const forgotPasswordOtp = catchAsync(
   },
 );
 
-export const resetPasswordWithOtp = catchAsync(
+export const resetPasswordWithToken = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
-    const result = await resetPassword(req.body);
+    const { token } = req.params as { token: string };
+    const { newPassword } = req.body;
+    
+    // Pass the token and body parameter to the service
+    const result = await resetPassword({ token, newPassword });
 
     res.status(200).json({
       status: 'success',

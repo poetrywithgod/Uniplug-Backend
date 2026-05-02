@@ -1,11 +1,11 @@
 import express from 'express';
 
 import {
-  forgotPasswordOtp,
+  forgotPasswordWithToken,
   login,
   register,
   resendOtp,
-  resetPasswordWithOtp,
+  resetPasswordWithToken,
   verifyOtp,
 } from './authController';
 import { validateRequest } from '../../utils/validation';
@@ -27,12 +27,12 @@ router.post('/login', validateRequest(loginSchema), login);
 router.post(
   '/forgot-password',
   validateRequest(forgotPasswordSchema),
-  forgotPasswordOtp,
+  forgotPasswordWithToken,
 );
 router.post(
-  '/reset-password',
+  '/reset-password/:token',
   validateRequest(resetPasswordSchema),
-  resetPasswordWithOtp,
+  resetPasswordWithToken,
 );
 
 export default router;
