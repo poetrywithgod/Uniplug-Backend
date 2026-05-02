@@ -6,9 +6,11 @@ import {
   JWT_EXPIRES_IN,
   JWT_SECRET,
   OTP_EXPIRES_IN_MINUTES,
+  RESET_PASSWORD_EXPIRES_IN_MINUTES,
 } from '../../configs/envConfig';
 
 const DEFAULT_OTP_EXPIRY_MINUTES = 10;
+const DEFAULT_RESET_EXPIRY_MINUTES = 30;
 const BCRYPT_ROUNDS = 12;
 
 export const hashPassword = async (plainPassword: string): Promise<string> => {
@@ -33,6 +35,20 @@ export const hashOtpCode = (otpCode: string): string => {
 export const getOtpExpiryDate = (): Date => {
   const expiryMinutes =
     Number(OTP_EXPIRES_IN_MINUTES) || DEFAULT_OTP_EXPIRY_MINUTES;
+  return new Date(Date.now() + expiryMinutes * 60 * 1000);
+};
+
+export const generateResetToken = (): string => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+export const hashResetToken = (token: string): string => {
+  return crypto.createHash('sha256').update(token).digest('hex');
+};
+
+export const getResetTokenExpiryDate = (): Date => {
+  const expiryMinutes =
+    Number(RESET_PASSWORD_EXPIRES_IN_MINUTES) || DEFAULT_RESET_EXPIRY_MINUTES;
   return new Date(Date.now() + expiryMinutes * 60 * 1000);
 };
 

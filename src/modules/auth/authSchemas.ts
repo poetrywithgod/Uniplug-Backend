@@ -69,11 +69,6 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-  email: z
-    .string()
-    .email('Provide a valid email address')
-    .transform(normalizeEmail),
-  otpCode: z.string().regex(/^\d{6}$/, 'OTP code must be 6 digits'),
   newPassword: z
     .string()
     .min(8, 'Password must be at least 8 characters')
