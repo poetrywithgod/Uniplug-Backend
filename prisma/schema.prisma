@@ -62,8 +62,8 @@ model User {
   approvalRemark    String?
   emailOtpHash      String?
   emailOtpExpiresAt DateTime?
-  resetOtpHash      String?
-  resetOtpExpiresAt DateTime?
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
