@@ -1,6 +1,7 @@
 import createError from 'http-errors';
 
 import prisma from '../../configs/prismaConfig';
+import { FRONTEND_URL } from '../../configs/envConfig';
 import {
   sendOtpEmail,
   resendOtpEmail,
@@ -10,7 +11,10 @@ import {
   comparePassword,
   generateOtpCode,
   getOtpExpiryDate,
+  generateResetToken,
+  getResetTokenExpiryDate,
   hashOtpCode,
+  hashResetToken,
   hashPassword,
   signAccessToken,
 } from './authSecurity';
@@ -272,59 +276,59 @@ export const forgotPassword = async (payload: ForgotPasswordBody) => {
   if (!user) {
     return {
       message:
-        'If an account exists with this email, a password reset OTP has been sent.',
+        'If an account exists with this email, a password reset link has been sent.',
     };
   }
 
-  const otpCode = generateOtpCode();
+  const resetToken = generateResetToken();
+  const resetTokenHash = hashResetToken(resetToken);
+
+  const baseUrl = FRONTEND_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+  const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(
+    resetToken,
+  )}`;
 
   await prisma.user.update({
     where: { email },
     data: {
-      resetOtpHash: hashOtpCode(otpCode),
-      resetOtpExpiresAt: getOtpExpiryDate(),
+      resetTokenHash,
+      resetTokenExpiresAt: getResetTokenExpiryDate(),
     },
   });
 
-  await sendPasswordResetEmail(user.firstName, email, otpCode);
+  await sendPasswordResetEmail(user.firstName, email, resetLink);
 
   return {
     message:
-      'If an account exists with this email, a password reset OTP has been sent.',
+      'If an account exists with this email, a password reset link has been sent.',
   };
 };
 
 export const resetPassword = async (payload: ResetPasswordBody) => {
-  const email = normalizeEmail(payload.email);
+  const tokenHash = hashResetToken(payload.token);
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findFirst({ 
+    where: { resetTokenHash: tokenHash } 
+  });
 
-  if (!user) {
-    throw createError(404, 'User not found.');
+  if (!user || !user.resetTokenExpiresAt) {
+    throw createError(400, 'Invalid or expired reset link.');
   }
 
-  if (!user.resetOtpHash || !user.resetOtpExpiresAt) {
-    throw createError(
-      400,
-      'No active reset OTP found. Please request a new code.',
-    );
-  }
+  const isExpired = user.resetTokenExpiresAt.getTime() < Date.now();
 
-  const otpHash = hashOtpCode(payload.otpCode);
-  const isExpired = user.resetOtpExpiresAt.getTime() < Date.now();
-
-  if (isExpired || otpHash !== user.resetOtpHash) {
-    throw createError(400, 'Invalid or expired OTP code.');
+  if (isExpired) {
+    throw createError(400, 'Invalid or expired reset link.');
   }
 
   const passwordHash = await hashPassword(payload.newPassword);
 
   await prisma.user.update({
-    where: { email },
+    where: { id: user.id },
     data: {
       passwordHash,
-      resetOtpHash: null,
-      resetOtpExpiresAt: null,
+      resetTokenHash: null,
+      resetTokenExpiresAt: null,
     },
   });
 
