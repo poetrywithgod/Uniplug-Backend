@@ -20,54 +20,48 @@ router.use(requireAuth, requireRole('APPLICANT'));
 router.post(
   '/',
   validateRequest(startApplicationSchema),
-  applicationController.startApplication
+  applicationController.startApplication,
 );
 
 // Get all applications for the current applicant
-router.get(
-  '/',
-  applicationController.getMyApplications
-);
+router.get('/', applicationController.getMyApplications);
 
 // Update step 1: Personal Details
 router.patch(
   '/:applicationId/personal-details',
   validateRequest(personalDetailsSchema),
-  applicationController.updatePersonalDetails
+  applicationController.updatePersonalDetails,
 );
 
 // Update step 2: Academic History
 router.patch(
   '/:applicationId/academic-history',
   validateRequest(academicHistorySchema),
-  applicationController.updateAcademicHistory
+  applicationController.updateAcademicHistory,
 );
 
 // Update step 3: Programme Selection
 router.patch(
   '/:applicationId/programme-selection',
   validateRequest(programmeSelectionSchema),
-  applicationController.updateProgrammeSelection
+  applicationController.updateProgrammeSelection,
 );
 
 // Step 4a: Get Cloudinary signature for document upload
 router.post(
   '/:applicationId/documents/signature',
   validateRequest(documentSignatureSchema),
-  applicationController.getCloudinarySignature
+  applicationController.getCloudinarySignature,
 );
 
 // Step 4b: Save uploaded document details to application
 router.post(
   '/:applicationId/documents',
   validateRequest(addDocumentSchema),
-  applicationController.addDocumentToApplication
+  applicationController.addDocumentToApplication,
 );
 
 // Step 5: Final Submission
-router.post(
-  '/:applicationId/submit',
-  applicationController.submitApplication
-);
+router.post('/:applicationId/submit', applicationController.submitApplication);
 
 export default router;
