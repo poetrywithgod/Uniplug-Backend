@@ -6,6 +6,7 @@ import adminRoutes from './modules/admin/adminRoute';
 import authRoutes from './modules/auth/authRoute';
 import metaRoutes from './modules/meta/metaRoute';
 import superAdminRoutes from './modules/superAdmin/superAdminRoute';
+import applicationRoutes from './modules/application/applicationRoute';
 import catchAll404Errors from './middlewares/catchAll404Errors';
 import globalErrorHandler from './middlewares/errorHandler';
 import { healthCheck } from './utils/health';
@@ -45,6 +46,7 @@ app.get('/', async (req: Request, res: Response, next: NextFunction) => {
       superAdmin: '/api/v1/super-admin',
       schoolAdmin: '/api/v1/admin',
       meta: '/api/v1/meta',
+      application: '/api/v1/application',
     },
   });
 });
@@ -54,6 +56,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/super-admin', superAdminRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/meta', metaRoutes);
+app.use('/api/v1/application', applicationRoutes);
 
 app.get('/debug-sentry', (req, res) => {
   throw new Error('My first Sentry error!');

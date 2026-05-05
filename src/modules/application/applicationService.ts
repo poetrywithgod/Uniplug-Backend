@@ -138,10 +138,15 @@ export const startApplication = async (
     throw createError(400, 'You already have an application for this school.');
   }
 
+  // Generate a unique application number prefixed by the school's unique ID
+  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const applicationNumber = `${tenant.schoolId}-APP-${randomStr}`;
+
   const application = await prisma.application.create({
     data: {
       applicantId,
       schoolId,
+      applicationNumber,
       status: ApplicationStatus.DRAFT,
       progressPercentage: 20,
     },
