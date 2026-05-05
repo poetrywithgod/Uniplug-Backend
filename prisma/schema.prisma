@@ -29,41 +29,123 @@ enum ApprovalStatus {
   REJECTED
 }
 
+enum ApplicationStatus {
+  NOT_STARTED
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum StudyMode {
+  FULL_TIME
+  PART_TIME
+  DISTANCE_LEARNING
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum DocumentType {
+  TRANSCRIPT
+  ID_PASSPORT
+  PASSPORT_PHOTOGRAPH
+  CERTIFICATE
+}
+
+type PersonalDetails {
+  firstName   String
+  lastName    String
+  dateOfBirth DateTime
+  gender      Gender
+  phoneNumber String
+  email       String
+}
+
+type AcademicRecord {
+  institution          String
+  highestQualification String
+  graduationYear       Int
+  overallGrade         String
+}
+
+type ProgrammeSelection {
+  faculty   String
+  course    String
+  studyMode StudyMode
+}
+
+type UploadedDocument {
+  documentType DocumentType
+  fileUrl      String
+  uploadedAt   DateTime     @default(now())
+}
+
 model Tenant {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  schoolName String
-  schoolId   String   @unique
-  email      String
-  school     String
-  address    String
-  postalCode String
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  users      User[]
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  schoolName   String
+  schoolId     String        @unique
+  email        String
+  school       String
+  address      String
+  postalCode   String
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  users        User[]
+  applications Application[]
 }
 
 model User {
-  id                String    @id @default(auto()) @map("_id") @db.ObjectId
-  firstName         String
-  lastName          String
-  email             String    @unique
-  phoneNumber       String?
-  staffId           String?
-  department        String?
-  school            String?
-  schoolId          String?
-  tenantId          String?   @db.ObjectId
-  tenant            Tenant?   @relation(fields: [tenantId], references: [id])
-  passwordHash      String
-  role              Role
-  isVerified        Boolean   @default(false)
-  approvalStatus    ApprovalStatus @default(VERIFIED)
-  approvalRemark    String?
-  emailOtpHash      String?
-  emailOtpExpiresAt DateTime?
+  id                  String         @id @default(auto()) @map("_id") @db.ObjectId
+  firstName           String
+  lastName            String
+  email               String         @unique
+  phoneNumber         String?
+  staffId             String?
+  department          String?
+  school              String?
+  schoolId            String?
+  tenantId            String?        @db.ObjectId
+  tenant              Tenant?        @relation(fields: [tenantId], references: [id])
+  passwordHash        String
+  role                Role
+  isVerified          Boolean        @default(false)
+  approvalStatus      ApprovalStatus @default(VERIFIED)
+  approvalRemark      String?
+  emailOtpHash        String?
+  emailOtpExpiresAt   DateTime?
   resetTokenHash      String?
   resetTokenExpiresAt DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  applications        Application[]
+}
+
+model Application {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  applicationNumber String? @unique
+  applicantId       String  @db.ObjectId
+  schoolId          String  @db.ObjectId
+
+  status             ApplicationStatus @default(DRAFT)
+  progressPercentage Int               @default(0)
+
+  personalDetails    PersonalDetails?
+  academicHistory    AcademicRecord?
+  programmeSelection ProgrammeSelection?
+  documents          UploadedDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applicant User   @relation(fields: [applicantId], references: [id])
+  school    Tenant @relation(fields: [schoolId], references: [id])
+
+  @@unique([applicantId, schoolId])
 }
