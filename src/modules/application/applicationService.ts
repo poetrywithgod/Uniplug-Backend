@@ -9,16 +9,16 @@ import {
 
 import { ApplicationStatus } from '../../../generated/prisma';
 import cloudinary from '../../configs/cloudinaryConfig';
-import { 
-  CLOUDINARY_CLOUD_NAME, 
-  CLOUDINARY_API_KEY, 
-  CLOUDINARY_API_SECRET 
+import {
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
 } from '../../configs/envConfig';
 
 export const getCloudinarySignature = async (
   applicantId: string,
   applicationId: string,
-  payload: { documentType: string; fileName: string }
+  payload: { documentType: string; fileName: string },
 ) => {
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
@@ -29,18 +29,21 @@ export const getCloudinarySignature = async (
   }
 
   if (application.applicantId !== applicantId) {
-    throw createError(403, 'You do not have permission to access this application.');
+    throw createError(
+      403,
+      'You do not have permission to access this application.',
+    );
   }
 
   const timestamp = Math.round(new Date().getTime() / 1000);
   const folder = `applications/${applicationId}/${payload.documentType.toLowerCase()}`;
-  
+
   const signature = cloudinary.utils.api_sign_request(
     {
       timestamp,
       folder,
     },
-    CLOUDINARY_API_SECRET || ''
+    CLOUDINARY_API_SECRET || '',
   );
 
   return {
@@ -55,7 +58,14 @@ export const getCloudinarySignature = async (
 export const addDocumentToApplication = async (
   applicantId: string,
   applicationId: string,
-  payload: { documentType: 'TRANSCRIPT' | 'ID_PASSPORT' | 'PASSPORT_PHOTOGRAPH' | 'CERTIFICATE'; fileUrl: string }
+  payload: {
+    documentType:
+      | 'TRANSCRIPT'
+      | 'ID_PASSPORT'
+      | 'PASSPORT_PHOTOGRAPH'
+      | 'CERTIFICATE';
+    fileUrl: string;
+  },
 ) => {
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
@@ -66,20 +76,25 @@ export const addDocumentToApplication = async (
   }
 
   if (application.applicantId !== applicantId) {
-    throw createError(403, 'You do not have permission to edit this application.');
+    throw createError(
+      403,
+      'You do not have permission to edit this application.',
+    );
   }
 
   // Allow appending new documents. Filter out existing versions of the same documentType to overwrite them
   const existingDocuments = application.documents || [];
-  const filteredDocs = existingDocuments.filter(doc => doc.documentType !== payload.documentType);
-  
+  const filteredDocs = existingDocuments.filter(
+    (doc) => doc.documentType !== payload.documentType,
+  );
+
   const updatedDocs = [
     ...filteredDocs,
     {
       documentType: payload.documentType,
       fileUrl: payload.fileUrl,
-      uploadedAt: new Date()
-    }
+      uploadedAt: new Date(),
+    },
   ];
 
   const updatedApplication = await prisma.application.update({
@@ -120,10 +135,7 @@ export const startApplication = async (
   });
 
   if (existingApplication) {
-    throw createError(
-      400,
-      'You already have an application for this school.',
-    );
+    throw createError(400, 'You already have an application for this school.');
   }
 
   const application = await prisma.application.create({
@@ -155,11 +167,17 @@ export const updatePersonalDetails = async (
   }
 
   if (application.applicantId !== applicantId) {
-    throw createError(403, 'You do not have permission to edit this application.');
+    throw createError(
+      403,
+      'You do not have permission to edit this application.',
+    );
   }
 
   if (application.status === 'SUBMITTED' || application.status === 'APPROVED') {
-    throw createError(400, 'Cannot edit an application that has already been submitted.');
+    throw createError(
+      400,
+      'Cannot edit an application that has already been submitted.',
+    );
   }
 
   const updatedApplication = await prisma.application.update({
@@ -190,11 +208,17 @@ export const updateAcademicHistory = async (
   }
 
   if (application.applicantId !== applicantId) {
-    throw createError(403, 'You do not have permission to edit this application.');
+    throw createError(
+      403,
+      'You do not have permission to edit this application.',
+    );
   }
 
   if (application.status === 'SUBMITTED' || application.status === 'APPROVED') {
-    throw createError(400, 'Cannot edit an application that has already been submitted.');
+    throw createError(
+      400,
+      'Cannot edit an application that has already been submitted.',
+    );
   }
 
   const updatedApplication = await prisma.application.update({
@@ -225,11 +249,17 @@ export const updateProgrammeSelection = async (
   }
 
   if (application.applicantId !== applicantId) {
-    throw createError(403, 'You do not have permission to edit this application.');
+    throw createError(
+      403,
+      'You do not have permission to edit this application.',
+    );
   }
 
   if (application.status === 'SUBMITTED' || application.status === 'APPROVED') {
-    throw createError(400, 'Cannot edit an application that has already been submitted.');
+    throw createError(
+      400,
+      'Cannot edit an application that has already been submitted.',
+    );
   }
 
   const updatedApplication = await prisma.application.update({
@@ -259,7 +289,10 @@ export const submitApplication = async (
   }
 
   if (application.applicantId !== applicantId) {
-    throw createError(403, 'You do not have permission to submit this application.');
+    throw createError(
+      403,
+      'You do not have permission to submit this application.',
+    );
   }
 
   if (application.status === 'SUBMITTED' || application.status === 'APPROVED') {
@@ -278,10 +311,13 @@ export const submitApplication = async (
   }
 
   // NOTE: Depending on requirements, validate documents array length
-  // e.g. application.documents.length === 0 needs to be avoided 
+  // e.g. application.documents.length === 0 needs to be avoided
   // Let's enforce at least 1 document for submission based on design step 4
   if (!application.documents || application.documents.length === 0) {
-    throw createError(400, 'At least one document upload is required before submission.');
+    throw createError(
+      400,
+      'At least one document upload is required before submission.',
+    );
   }
 
   const updatedApplication = await prisma.application.update({

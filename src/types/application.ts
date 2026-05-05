@@ -1,4 +1,3 @@
-
 export interface StartApplicationBody {
   schoolId: string;
 }
@@ -26,11 +25,19 @@ export interface ProgrammeSelectionBody {
 }
 
 export interface DocumentSignatureBody {
-  documentType: 'TRANSCRIPT' | 'ID_PASSPORT' | 'PASSPORT_PHOTOGRAPH' | 'CERTIFICATE';
+  documentType:
+    | 'TRANSCRIPT'
+    | 'ID_PASSPORT'
+    | 'PASSPORT_PHOTOGRAPH'
+    | 'CERTIFICATE';
   fileName: string;
 }
 
 export interface AddDocumentBody {
-  documentType: 'TRANSCRIPT' | 'ID_PASSPORT' | 'PASSPORT_PHOTOGRAPH' | 'CERTIFICATE';
+  documentType:
+    | 'TRANSCRIPT'
+    | 'ID_PASSPORT'
+    | 'PASSPORT_PHOTOGRAPH'
+    | 'CERTIFICATE';
   fileUrl: string;
 }
