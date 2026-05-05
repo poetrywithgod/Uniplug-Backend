@@ -26,7 +26,10 @@ const swaggerSpec = {
       description: 'School-admin staff onboarding and governance',
     },
     { name: 'Meta', description: 'Shared read-only metadata endpoints' },
-  { name: 'Application', description: 'Applicant admission application endpoints' },
+    {
+      name: 'Application',
+      description: 'Applicant admission application endpoints',
+    },
   ],
   components: {
     securitySchemes: {
@@ -91,14 +94,28 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['firstName', 'lastName', 'dateOfBirth', 'gender', 'phoneNumber', 'email'],
+                required: [
+                  'firstName',
+                  'lastName',
+                  'dateOfBirth',
+                  'gender',
+                  'phoneNumber',
+                  'email',
+                ],
                 properties: {
                   firstName: { type: 'string', example: 'Jane' },
                   lastName: { type: 'string', example: 'Doe' },
                   dateOfBirth: { type: 'string', example: '2000-01-01' },
-                  gender: { type: 'string', enum: ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'] },
+                  gender: {
+                    type: 'string',
+                    enum: ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'],
+                  },
                   phoneNumber: { type: 'string', example: '+2348012345678' },
-                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'jane@uniplug.com',
+                  },
                 },
               },
             },
@@ -128,9 +145,17 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['institution', 'highestQualification', 'graduationYear', 'overallGrade'],
+                required: [
+                  'institution',
+                  'highestQualification',
+                  'graduationYear',
+                  'overallGrade',
+                ],
                 properties: {
-                  institution: { type: 'string', example: 'University of Lagos' },
+                  institution: {
+                    type: 'string',
+                    example: 'University of Lagos',
+                  },
                   highestQualification: { type: 'string', example: 'BSc' },
                   graduationYear: { type: 'integer', example: 2022 },
                   overallGrade: { type: 'string', example: 'First Class' },
@@ -167,7 +192,10 @@ const swaggerSpec = {
                 properties: {
                   faculty: { type: 'string', example: 'Engineering' },
                   course: { type: 'string', example: 'Computer Engineering' },
-                  studyMode: { type: 'string', enum: ['FULL_TIME', 'PART_TIME', 'DISTANCE_LEARNING'] },
+                  studyMode: {
+                    type: 'string',
+                    enum: ['FULL_TIME', 'PART_TIME', 'DISTANCE_LEARNING'],
+                  },
                 },
               },
             },
@@ -199,7 +227,15 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['documentType', 'fileName'],
                 properties: {
-                  documentType: { type: 'string', enum: ['TRANSCRIPT', 'ID_PASSPORT', 'PASSPORT_PHOTOGRAPH', 'CERTIFICATE'] },
+                  documentType: {
+                    type: 'string',
+                    enum: [
+                      'TRANSCRIPT',
+                      'ID_PASSPORT',
+                      'PASSPORT_PHOTOGRAPH',
+                      'CERTIFICATE',
+                    ],
+                  },
                   fileName: { type: 'string', example: 'transcript.pdf' },
                 },
               },
@@ -232,8 +268,21 @@ const swaggerSpec = {
                 type: 'object',
                 required: ['documentType', 'fileUrl'],
                 properties: {
-                  documentType: { type: 'string', enum: ['TRANSCRIPT', 'ID_PASSPORT', 'PASSPORT_PHOTOGRAPH', 'CERTIFICATE'] },
-                  fileUrl: { type: 'string', format: 'url', example: 'https://res.cloudinary.com/demo/image/upload/v1234567890/applications/123/TRANSCRIPT.pdf' },
+                  documentType: {
+                    type: 'string',
+                    enum: [
+                      'TRANSCRIPT',
+                      'ID_PASSPORT',
+                      'PASSPORT_PHOTOGRAPH',
+                      'CERTIFICATE',
+                    ],
+                  },
+                  fileUrl: {
+                    type: 'string',
+                    format: 'url',
+                    example:
+                      'https://res.cloudinary.com/demo/image/upload/v1234567890/applications/123/TRANSCRIPT.pdf',
+                  },
                 },
               },
             },
@@ -382,7 +431,9 @@ const swaggerSpec = {
             },
           },
         },
-        responses: { 200: { description: 'Password reset link sent to email' } },
+        responses: {
+          200: { description: 'Password reset link sent to email' },
+        },
       },
     },
     '/auth/reset-password/{token}': {
