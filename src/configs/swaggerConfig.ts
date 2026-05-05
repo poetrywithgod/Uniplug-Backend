@@ -26,6 +26,7 @@ const swaggerSpec = {
       description: 'School-admin staff onboarding and governance',
     },
     { name: 'Meta', description: 'Shared read-only metadata endpoints' },
+  { name: 'Application', description: 'Applicant admission application endpoints' },
   ],
   components: {
     securitySchemes: {
@@ -37,6 +38,232 @@ const swaggerSpec = {
     },
   },
   paths: {
+    // --- Application Endpoints ---
+    '/application': {
+      get: {
+        tags: ['Application'],
+        summary: 'Get all applications for the current applicant',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Applications retrieved successfully' },
+        },
+      },
+      post: {
+        tags: ['Application'],
+        summary: 'Start a new application for a school',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['schoolId'],
+                properties: {
+                  schoolId: { type: 'string', example: 'UPH-009' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Application started successfully' },
+          409: { description: 'Application already exists for this school' },
+        },
+      },
+    },
+    '/application/{applicationId}/personal-details': {
+      patch: {
+        tags: ['Application'],
+        summary: 'Update personal details (Step 1)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'applicationId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['firstName', 'lastName', 'dateOfBirth', 'gender', 'phoneNumber', 'email'],
+                properties: {
+                  firstName: { type: 'string', example: 'Jane' },
+                  lastName: { type: 'string', example: 'Doe' },
+                  dateOfBirth: { type: 'string', example: '2000-01-01' },
+                  gender: { type: 'string', enum: ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'] },
+                  phoneNumber: { type: 'string', example: '+2348012345678' },
+                  email: { type: 'string', format: 'email', example: 'jane@uniplug.com' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Personal details updated successfully' },
+        },
+      },
+    },
+    '/application/{applicationId}/academic-history': {
+      patch: {
+        tags: ['Application'],
+        summary: 'Update academic history (Step 2)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'applicationId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['institution', 'highestQualification', 'graduationYear', 'overallGrade'],
+                properties: {
+                  institution: { type: 'string', example: 'University of Lagos' },
+                  highestQualification: { type: 'string', example: 'BSc' },
+                  graduationYear: { type: 'integer', example: 2022 },
+                  overallGrade: { type: 'string', example: 'First Class' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Academic history updated successfully' },
+        },
+      },
+    },
+    '/application/{applicationId}/programme-selection': {
+      patch: {
+        tags: ['Application'],
+        summary: 'Update programme selection (Step 3)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'applicationId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['faculty', 'course', 'studyMode'],
+                properties: {
+                  faculty: { type: 'string', example: 'Engineering' },
+                  course: { type: 'string', example: 'Computer Engineering' },
+                  studyMode: { type: 'string', enum: ['FULL_TIME', 'PART_TIME', 'DISTANCE_LEARNING'] },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Programme selection updated successfully' },
+        },
+      },
+    },
+    '/application/{applicationId}/documents/signature': {
+      post: {
+        tags: ['Application'],
+        summary: 'Get Cloudinary signature for document upload (Step 4a)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'applicationId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['documentType', 'fileName'],
+                properties: {
+                  documentType: { type: 'string', enum: ['TRANSCRIPT', 'ID_PASSPORT', 'PASSPORT_PHOTOGRAPH', 'CERTIFICATE'] },
+                  fileName: { type: 'string', example: 'transcript.pdf' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Cloudinary signature generated successfully' },
+        },
+      },
+    },
+    '/application/{applicationId}/documents': {
+      post: {
+        tags: ['Application'],
+        summary: 'Save uploaded document details to application (Step 4b)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'applicationId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['documentType', 'fileUrl'],
+                properties: {
+                  documentType: { type: 'string', enum: ['TRANSCRIPT', 'ID_PASSPORT', 'PASSPORT_PHOTOGRAPH', 'CERTIFICATE'] },
+                  fileUrl: { type: 'string', format: 'url', example: 'https://res.cloudinary.com/demo/image/upload/v1234567890/applications/123/TRANSCRIPT.pdf' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Document added to application successfully' },
+        },
+      },
+    },
+    '/application/{applicationId}/submit': {
+      post: {
+        tags: ['Application'],
+        summary: 'Submit application (Step 5)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'applicationId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          200: { description: 'Application submitted successfully' },
+        },
+      },
+    },
+    // --- End Application Endpoints ---
+
     '/auth/register': {
       post: {
         tags: ['Auth'],
