@@ -5,11 +5,10 @@ import * as applicationService from './applicationService';
 export const startApplication = catchAsync(
   async (req: Request, res: Response) => {
     const applicantId = res.locals.user.id;
-    const { schoolId } = req.body;
 
     const application = await applicationService.startApplication(
       applicantId,
-      schoolId,
+      req.body,
     );
 
     res.status(201).json({
@@ -26,8 +25,8 @@ export const updatePersonalDetails = catchAsync(
     const data = req.body;
 
     const application = await applicationService.updatePersonalDetails(
-      applicationId,
       applicantId,
+      applicationId,
       data,
     );
 
@@ -45,8 +44,8 @@ export const updateAcademicHistory = catchAsync(
     const data = req.body;
 
     const application = await applicationService.updateAcademicHistory(
-      applicationId,
       applicantId,
+      applicationId,
       data,
     );
 
@@ -64,8 +63,8 @@ export const updateProgrammeSelection = catchAsync(
     const data = req.body;
 
     const application = await applicationService.updateProgrammeSelection(
-      applicationId,
       applicantId,
+      applicationId,
       data,
     );
 
@@ -80,12 +79,12 @@ export const getCloudinarySignature = catchAsync(
   async (req: Request, res: Response) => {
     const applicantId = res.locals.user.id;
     const applicationId = req.params.applicationId as string;
-    const { documentType } = req.body;
+    const data = req.body;
 
     const signatureData = await applicationService.getCloudinarySignature(
-      applicationId,
       applicantId,
-      documentType,
+      applicationId,
+      data,
     );
 
     res.status(200).json({
@@ -102,8 +101,8 @@ export const addDocumentToApplication = catchAsync(
     const data = req.body;
 
     const application = await applicationService.addDocumentToApplication(
-      applicationId,
       applicantId,
+      applicationId,
       data,
     );
 
@@ -120,8 +119,8 @@ export const submitApplication = catchAsync(
     const applicationId = req.params.applicationId as string;
 
     const application = await applicationService.submitApplication(
-      applicationId,
       applicantId,
+      applicationId,
     );
 
     res.status(200).json({
