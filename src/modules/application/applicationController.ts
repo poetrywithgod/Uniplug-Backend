@@ -6,14 +6,14 @@ export const startApplication = catchAsync(
   async (req: Request, res: Response) => {
     const applicantId = res.locals.user.id;
 
-    const application = await applicationService.startApplication(
+    const result = await applicationService.startApplication(
       applicantId,
       req.body,
     );
 
-    res.status(201).json({
-      message: 'Application started successfully',
-      data: application,
+    res.status(200).json({
+      message: result.message,
+      data: result.application,
     });
   },
 );

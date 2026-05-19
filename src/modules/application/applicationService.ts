@@ -135,7 +135,10 @@ export const startApplication = async (
   });
 
   if (existingApplication) {
-    throw createError(400, 'You already have an application for this school.');
+    return {
+      message: 'Existing application found. Continuing draft.',
+      application: existingApplication,
+    };
   }
 
   // Generate a unique application number prefixed by the school's unique ID
