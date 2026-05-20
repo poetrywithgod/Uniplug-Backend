@@ -3,6 +3,17 @@
 ## Date
 
 - 2026-04-10
+
+## Latest Update (Application Module & Integrations)
+
+- Added comprehensive Application module complete with routes, schemas, controllers, and services for applicant management.
+- Extended Prisma schema with robust application-related types and models (`Application`, `ProgrammeSelection`, `PersonalDetails`, `AcademicRecord`, `UploadedDocument`, `ApplicationStatus`).
+- Included `applicationNumber` generation logic inside the application initialization stream.
+- Modified `startApplication` logic to return existing application data if one already exists, streamlining user flow securely.
+- Streamlined overall endpoint response structures and controller parameter handling across application services.
+- Migrated image management assets to Cloudinary with direct integration for applicant uploads.
+- Bootstrapped ecosystem with a new mock tenant seeding script mapping a demo university to support end-to-end testing.
+- Polished configuration styling and formatting inside `envConfig` and `swaggerConfig`.
 - 2026-04-14
 
 ## Latest Update (Tenant Governance + Approval Hierarchy)
