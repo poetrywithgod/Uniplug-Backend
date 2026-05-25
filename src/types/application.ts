@@ -29,7 +29,10 @@ export interface DocumentSignatureBody {
     | 'TRANSCRIPT'
     | 'ID_PASSPORT'
     | 'PASSPORT_PHOTOGRAPH'
-    | 'CERTIFICATE';
+    | 'CERTIFICATE'
+    | 'JAMB_RESULT'
+    | 'BIRTH_CERTIFICATE'
+    | 'LGA_CERTIFICATE';
   fileName: string;
 }
 
@@ -38,6 +41,9 @@ export interface AddDocumentBody {
     | 'TRANSCRIPT'
     | 'ID_PASSPORT'
     | 'PASSPORT_PHOTOGRAPH'
-    | 'CERTIFICATE';
+    | 'CERTIFICATE'
+    | 'JAMB_RESULT'
+    | 'BIRTH_CERTIFICATE'
+    | 'LGA_CERTIFICATE';
   fileUrl: string;
 }
