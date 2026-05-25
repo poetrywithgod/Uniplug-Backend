@@ -59,6 +59,9 @@ export const documentSignatureSchema = z.object({
     'ID_PASSPORT',
     'PASSPORT_PHOTOGRAPH',
     'CERTIFICATE',
+    'JAMB_RESULT',
+    'BIRTH_CERTIFICATE',
+    'LGA_CERTIFICATE',
   ]),
   fileName: z.string().min(1, 'File name is required'),
 });
@@ -69,6 +72,9 @@ export const addDocumentSchema = z.object({
     'ID_PASSPORT',
     'PASSPORT_PHOTOGRAPH',
     'CERTIFICATE',
+    'JAMB_RESULT',
+    'BIRTH_CERTIFICATE',
+    'LGA_CERTIFICATE',
   ]),
   fileUrl: z.string().url('Must be a valid Cloudinary URL'),
 });
