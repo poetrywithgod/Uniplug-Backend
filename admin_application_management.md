@@ -96,3 +96,8 @@ We are adding two primary administrative APIs.
 - Wire the Zod validation schemas into the payload validation middleware.
 - Ensure the `requireRole('SCHOOL_ADMIN')` policy is attached.
 - Feed parsed requests safely to the service handlers.
+
+## 6. Seed a Verified School Admin
+
+- Update/run a seed script (e.g., `src/scripts/seedMockTenant.ts`) to insert a Tenant (school) and a verified User with the `SCHOOL_ADMIN` role attached to that `tenantId`.
+- This gives us a valid test account to authenticate and perform these application management tasks.
