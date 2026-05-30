@@ -394,7 +394,8 @@ const swaggerSpec = {
                 properties: {
                   email: {
                     type: 'string',
-                    description: 'Can be either an email address or an Admin ID',
+                    description:
+                      'Can be either an email address or an Admin ID',
                     example: 'jane@uniplug.com (or UPH-J-1239)',
                   },
                   password: { type: 'string', example: 'Secure123' },
@@ -731,21 +732,32 @@ const swaggerSpec = {
         security: [{ bearerAuth: [] }],
         parameters: [
           { name: 'page', in: 'query', schema: { type: 'number', default: 1 } },
-          { name: 'limit', in: 'query', schema: { type: 'number', default: 10 } },
-          { 
-            name: 'status', 
-            in: 'query', 
-            schema: { 
-              type: 'string', 
-              enum: ['NOT_STARTED', 'DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'] 
-            } 
+          {
+            name: 'limit',
+            in: 'query',
+            schema: { type: 'number', default: 10 },
+          },
+          {
+            name: 'status',
+            in: 'query',
+            schema: {
+              type: 'string',
+              enum: [
+                'NOT_STARTED',
+                'DRAFT',
+                'SUBMITTED',
+                'UNDER_REVIEW',
+                'APPROVED',
+                'REJECTED',
+              ],
+            },
           },
           { name: 'program', in: 'query', schema: { type: 'string' } },
           { name: 'session', in: 'query', schema: { type: 'string' } },
           { name: 'search', in: 'query', schema: { type: 'string' } },
         ],
-        responses: { 
-          200: { description: 'Target applications retrieved successfully' } 
+        responses: {
+          200: { description: 'Target applications retrieved successfully' },
         },
       },
     },
@@ -784,8 +796,8 @@ const swaggerSpec = {
             },
           },
         },
-        responses: { 
-          200: { description: 'Application status correctly updated' } 
+        responses: {
+          200: { description: 'Application status correctly updated' },
         },
       },
     },
