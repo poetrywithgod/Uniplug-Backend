@@ -43,7 +43,7 @@ const generateAdminId = (firstName: string, schoolId: string): string => {
   const prefix = schoolId.toUpperCase();
   const initial = firstName.charAt(0).toUpperCase();
   const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
-  
+
   return `${prefix}-${initial}-${randomDigits}`;
 };
 
@@ -111,7 +111,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
   const otpCode = generateOtpCode();
   const passwordHash = await hashPassword(payload.password);
   const { firstName, lastName } = splitFullName(payload.fullName);
-  
+
   // Generate the new unique Admin ID safely mapped against the current school
   const adminId = generateAdminId(firstName, payload.schoolId);
 
