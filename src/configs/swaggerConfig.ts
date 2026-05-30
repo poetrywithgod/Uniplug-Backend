@@ -394,8 +394,8 @@ const swaggerSpec = {
                 properties: {
                   email: {
                     type: 'string',
-                    format: 'email',
-                    example: 'jane@uniplug.com',
+                    description: 'Can be either an email address or an Admin ID',
+                    example: 'jane@uniplug.com (or UPH-J-1239)',
                   },
                   password: { type: 'string', example: 'Secure123' },
                 },
@@ -722,6 +722,71 @@ const swaggerSpec = {
           },
         },
         responses: { 200: { description: 'Staff rejected' } },
+      },
+    },
+    '/admin/applications': {
+      get: {
+        tags: ['SchoolAdmin'],
+        summary: 'List and filter applications for the school',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'number', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'number', default: 10 } },
+          { 
+            name: 'status', 
+            in: 'query', 
+            schema: { 
+              type: 'string', 
+              enum: ['NOT_STARTED', 'DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'] 
+            } 
+          },
+          { name: 'program', in: 'query', schema: { type: 'string' } },
+          { name: 'session', in: 'query', schema: { type: 'string' } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: { 
+          200: { description: 'Target applications retrieved successfully' } 
+        },
+      },
+    },
+    '/admin/applications/{applicationId}/status': {
+      patch: {
+        tags: ['SchoolAdmin'],
+        summary: 'Update application status (e.g., Approve / Reject)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'applicationId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: {
+                  status: {
+                    type: 'string',
+                    enum: ['UNDER_REVIEW', 'APPROVED', 'REJECTED'],
+                  },
+                  rejectionReason: {
+                    type: 'string',
+                    description: 'Required strictly when status is REJECTED',
+                    example: 'O-Level results do not meet criteria.',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: { 
+          200: { description: 'Application status correctly updated' } 
+        },
       },
     },
     '/meta/departments': {
