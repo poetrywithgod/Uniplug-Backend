@@ -251,3 +251,121 @@ export const rejectStaffAccount = async (
     user: updatedUser,
   };
 };
+
+export const getApplications = async (
+  query: {
+    page: number;
+    limit: number;
+    status?: string;
+    program?: string;
+    session?: string;
+    search?: string;
+  },
+  actor: ActorContext,
+) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'School admin account is not linked to a tenant.');
+  }
+
+  const { page, limit, status, program, session, search } = query;
+  const skip = (page - 1) * limit;
+
+  // Build the where clause dynamically
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = { schoolId: actor.tenantId }; // querying the tenantId representing the school
+
+  if (status) {
+    where.status = status;
+  }
+  if (session) {
+    where.session = session;
+  }
+  if (program) {
+    // Handling nested json querying in Prisma for Mongodb
+    where.programmeSelection = {
+      is: {
+        course: program,
+      },
+    };
+  }
+  if (search) {
+    where.OR = [
+      { applicationNumber: { contains: search, mode: 'insensitive' } },
+      { applicant: { firstName: { contains: search, mode: 'insensitive' } } },
+      { applicant: { lastName: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [applications, total] = await Promise.all([
+    prisma.application.findMany({
+      where,
+      skip,
+      take: limit,
+      include: {
+        applicant: {
+          select: { firstName: true, lastName: true, email: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.application.count({ where }),
+  ]);
+
+  return {
+    data: applications,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+export const updateApplicationStatus = async (
+  id: string,
+  payload: {
+    status: 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED';
+    rejectionReason?: string;
+  },
+  actor: ActorContext,
+) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'School admin account is not linked to a tenant.');
+  }
+
+  const application = await prisma.application.findUnique({
+    where: { id },
+  });
+
+  if (!application) {
+    throw createError(404, 'Application not found.');
+  }
+
+  if (application.schoolId !== actor.tenantId) {
+    throw createError(
+      403,
+      'You do not have permission to modify this application.',
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dataToUpdate: any = { status: payload.status };
+
+  if (payload.status === 'REJECTED') {
+    dataToUpdate.rejectionReason = payload.rejectionReason;
+  } else if (application.status === 'REJECTED') {
+    // Clear rejection reason if changing status back from rejected
+    dataToUpdate.rejectionReason = null;
+  }
+
+  const updatedApplication = await prisma.application.update({
+    where: { id },
+    data: dataToUpdate,
+  });
+
+  return {
+    message: 'Application status updated successfully',
+    data: updatedApplication,
+  };
+};

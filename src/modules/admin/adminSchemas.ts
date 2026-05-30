@@ -38,3 +38,39 @@ export const createHostelAdminSchema = staffSchema.transform((data) => ({
 export const reviewStaffSchema = z.object({
   remark: z.string().max(250).optional(),
 });
+
+export const getApplicationsQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  status: z
+    .enum([
+      'NOT_STARTED',
+      'DRAFT',
+      'SUBMITTED',
+      'UNDER_REVIEW',
+      'APPROVED',
+      'REJECTED',
+    ])
+    .optional(),
+  program: z.string().optional(),
+  session: z.string().optional(),
+  search: z.string().optional(),
+});
+
+export const updateApplicationStatusSchema = z
+  .object({
+    status: z.enum(['UNDER_REVIEW', 'APPROVED', 'REJECTED']),
+    rejectionReason: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.status === 'REJECTED' && !data.rejectionReason?.trim()) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: 'Rejection reason is required when status is REJECTED',
+      path: ['rejectionReason'],
+    },
+  );
