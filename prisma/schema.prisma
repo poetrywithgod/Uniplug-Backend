@@ -109,6 +109,7 @@ model User {
   firstName           String
   lastName            String
   email               String         @unique
+  adminId             String?        @unique
   phoneNumber         String?
   staffId             String?
   department          String?
@@ -137,6 +138,8 @@ model Application {
   schoolId          String  @db.ObjectId
 
   status             ApplicationStatus @default(DRAFT)
+  session            String?
+  rejectionReason    String?
   progressPercentage Int               @default(0)
 
   personalDetails    PersonalDetails?

@@ -5,7 +5,7 @@ This document provides a step-by-step guide for frontend developers or API consu
 ## Overview & Prerequisites
 
 - **Authentication / Login**: Administrators can now log in using either their **Email** or their generated **Admin ID** (e.g., `UPH-J-1239`) via the standard `/api/v1/auth/login` endpoint. Ensure your login forms reflect this flexibility (e.g., "Email or Admin ID").
-- **Authorization**: Protected endpoints require a valid Bearer token (`Authorization: Bearer <TOKEN>`). 
+- **Authorization**: Protected endpoints require a valid Bearer token (`Authorization: Bearer <TOKEN>`).
 - **Tenant Isolation**: The logged-in admin is securely tied to a specific `tenantId` (School). The backend automatically scopes all listing and mutation operations to only affect records belonging to that school. Do not send `schoolId` in payloads; it is extracted securely from the JWT.
 
 ---
@@ -90,7 +90,8 @@ Transition an application to a new state (e.g., from `SUBMITTED` to `UNDER_REVIE
 These endpoints allow the School Admin to onboard and review additional teaching and administrative staff.
 
 ### 2a. Onboard a Lecturer
-Create an account for a new lecturer. 
+
+Create an account for a new lecturer.
 
 - **Endpoint**: `POST /api/v1/admin/lecturers`
 - **Headers**: `Authorization: Bearer <token>`
@@ -107,6 +108,7 @@ Create an account for a new lecturer.
 - **Response**: Returns success. The lecturer receives an email with an OTP for verification.
 
 ### 2b. Onboard a Hostel Admin
+
 Create an account for a new hostel administrator.
 
 - **Endpoint**: `POST /api/v1/admin/hostel-admins`
@@ -114,6 +116,7 @@ Create an account for a new hostel administrator.
 - **Body**: Same structure as `2a. Onboard a Lecturer`.
 
 ### 2c. Approve a Staff Account
+
 Approve a pending staff member's account, granting them access to the platform.
 
 - **Endpoint**: `PATCH /api/v1/admin/staff/:userId/verify`
@@ -121,6 +124,7 @@ Approve a pending staff member's account, granting them access to the platform.
 - **Response**: Success message.
 
 ### 2d. Decline a Staff Account
+
 Reject a staff member's account onboarding attempt.
 
 - **Endpoint**: `PATCH /api/v1/admin/staff/:userId/reject`
@@ -160,7 +164,7 @@ A Super Admin can create the primary `SCHOOL_ADMIN` for a specific school. The b
   ```json
   {
     "status": "success",
-    "message": "School admin account created successfully.",
+    "message": "School admin account created successfully."
     // A globally unique adminId string is silently minted onto the DB record
   }
   ```
