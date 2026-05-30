@@ -19,3 +19,21 @@ export const validateRequest = (schema: ZodTypeAny) => {
     }
   };
 };
+
+export const validateQuery = (schema: ZodTypeAny) => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    try {
+      // Cast to 'any' to satisfy Express's ParsedQs type constraint
+      req.query = schema.parse(req.query) as any;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const message = error.issues.map((issue) => issue.message).join('. ');
+        next(createError(400, message));
+        return;
+      }
+
+      next(error);
+    }
+  };
+};

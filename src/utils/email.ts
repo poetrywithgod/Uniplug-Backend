@@ -299,10 +299,10 @@ export const resendOtpEmail = async (
 export const sendPasswordResetEmail = async (
   name: string,
   email: string,
-    resetLink: string,
+  resetLink: string,
 ) => {
   const transporter = createEmailTransporter();
-    const safeResetLink = escapeHtml(resetLink);
+  const safeResetLink = escapeHtml(resetLink);
 
   const mailOptions = {
     from: `Uniplug Team <${EMAIL_USERNAME}>`,
@@ -439,9 +439,13 @@ export const sendPasswordResetEmail = async (
 
   try {
     const info = await transporter.sendMail(mailOptions);
-        mailLog.info(`Password reset link email sent to ${email}: ${info.response}`);
+    mailLog.info(
+      `Password reset link email sent to ${email}: ${info.response}`,
+    );
   } catch (error) {
-        mailLog.error(`Error sending password reset link email to ${email}: ${error}`);
+    mailLog.error(
+      `Error sending password reset link email to ${email}: ${error}`,
+    );
   }
 };
 
@@ -541,6 +545,7 @@ export const sendSchoolAdminOnboardingEmail = async (payload: {
   name: string;
   email: string;
   password: string;
+  adminId: string;
   schoolId: string;
   school: string;
   otpCode: string;
@@ -551,6 +556,7 @@ export const sendSchoolAdminOnboardingEmail = async (payload: {
   const safeSchoolId = escapeHtml(payload.schoolId);
   const safeSchool = escapeHtml(payload.school);
   const safePassword = escapeHtml(payload.password);
+  const safeAdminId = escapeHtml(payload.adminId);
 
   const mailOptions = {
     from: `Uniplug Team <${EMAIL_USERNAME}>`,
@@ -588,6 +594,7 @@ export const sendSchoolAdminOnboardingEmail = async (payload: {
                         <div class="row"><span class="label">Role:</span> School Admin</div>
                         <div class="row"><span class="label">School ID:</span> ${safeSchoolId}</div>
                         <div class="row"><span class="label">School:</span> ${safeSchool}</div>
+                        <div class="row"><span class="label">Admin ID:</span> ${safeAdminId}</div>
                         <div class="row"><span class="label">Email:</span> ${escapeHtml(payload.email)}</div>
                         <div class="row"><span class="label">Password:</span> ${safePassword}</div>
                     </div>
