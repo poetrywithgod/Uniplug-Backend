@@ -56,8 +56,11 @@ export const resendOtpSchema = z.object({
 export const loginSchema = z.object({
   email: z
     .string()
-    .email('Provide a valid email address')
-    .transform(normalizeEmail),
+    .min(1, 'Email or Admin ID is required')
+    .transform((val) => {
+      // Basic normalization just like previous transform to make sure no weird spaces exist.
+      return val.trim().toLowerCase();
+    }),
   password: z.string().min(1, 'Password is required'),
 });
 

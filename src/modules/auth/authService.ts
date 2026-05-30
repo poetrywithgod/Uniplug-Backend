@@ -216,9 +216,16 @@ export const resendRegistrationOtp = async (payload: ResendOtpBody) => {
 };
 
 export const loginUser = async (payload: LoginBody) => {
-  const email = normalizeEmail(payload.email);
+  const identifier = normalizeEmail(payload.email);
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: identifier },
+        { adminId: payload.email }, // Using original payload.email in case normalizeEmail mutates ID layout
+      ],
+    },
+  });
 
   if (!user) {
     throw createError(401, 'Invalid email or password.');
