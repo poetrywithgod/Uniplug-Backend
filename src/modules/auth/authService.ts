@@ -314,8 +314,8 @@ export const forgotPassword = async (payload: ForgotPasswordBody) => {
 export const resetPassword = async (payload: ResetPasswordBody) => {
   const tokenHash = hashResetToken(payload.token);
 
-  const user = await prisma.user.findFirst({ 
-    where: { resetTokenHash: tokenHash } 
+  const user = await prisma.user.findFirst({
+    where: { resetTokenHash: tokenHash },
   });
 
   if (!user || !user.resetTokenExpiresAt) {

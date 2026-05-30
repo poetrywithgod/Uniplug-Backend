@@ -38,6 +38,15 @@ const splitFullName = (
   };
 };
 
+const generateAdminId = (firstName: string, schoolId: string): string => {
+  // e.g. "UPH", "J", "4823" -> "UPH-J-4823"
+  const prefix = schoolId.toUpperCase();
+  const initial = firstName.charAt(0).toUpperCase();
+  const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
+  
+  return `${prefix}-${initial}-${randomDigits}`;
+};
+
 export const createTenant = async (payload: CreateTenantPayload) => {
   const existingTenant = await prisma.tenant.findFirst({
     where: {
@@ -102,6 +111,9 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
   const otpCode = generateOtpCode();
   const passwordHash = await hashPassword(payload.password);
   const { firstName, lastName } = splitFullName(payload.fullName);
+  
+  // Generate the new unique Admin ID safely mapped against the current school
+  const adminId = generateAdminId(firstName, payload.schoolId);
 
   const user =
     existingUser &&
@@ -114,6 +126,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
             lastName,
             passwordHash,
             role: 'SCHOOL_ADMIN',
+            adminId,
             school: payload.school,
             schoolId: payload.schoolId,
             tenantId: tenant.id,
@@ -127,6 +140,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
             firstName: true,
             lastName: true,
             email: true,
+            adminId: true,
             role: true,
             school: true,
             schoolId: true,
@@ -145,6 +159,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
               email: payload.email,
               passwordHash,
               role: 'SCHOOL_ADMIN',
+              adminId,
               school: payload.school,
               schoolId: payload.schoolId,
               tenantId: tenant.id,
@@ -157,6 +172,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
               firstName: true,
               lastName: true,
               email: true,
+              adminId: true,
               role: true,
               school: true,
               schoolId: true,
@@ -169,6 +185,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
     name: payload.fullName,
     email: payload.email,
     password: payload.password,
+    adminId,
     schoolId: payload.schoolId,
     school: payload.school,
     otpCode,
