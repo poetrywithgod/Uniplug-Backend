@@ -55,6 +55,7 @@ Fetch a paginated list of applications submitted to the administrator's school.
     }
   }
   ```
+  The backend now returns the full application record for each item, including nested `personalDetails`, `academicHistory`, `programmeSelection`, `documents`, and the full `applicant` and `school` relations.
 
 ### 1b. Update Application Status (Approve/Reject)
 
