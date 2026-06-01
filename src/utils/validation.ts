@@ -23,8 +23,15 @@ export const validateRequest = (schema: ZodTypeAny) => {
 export const validateQuery = (schema: ZodTypeAny) => {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
-      // Cast to 'any' to satisfy Express's ParsedQs type constraint
-      req.query = schema.parse(req.query) as any;
+      const parsed = schema.parse(req.query);
+      // Express 'req.query' has only a getter, so we must mutate the existing object
+      // or redefine the property. Redefining is cleaner for whole-object replacement:
+      Object.defineProperty(req, 'query', {
+        value: parsed,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
       next();
     } catch (error) {
       if (error instanceof ZodError) {
