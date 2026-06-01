@@ -30,7 +30,7 @@ export const validateQuery = (schema: ZodTypeAny) => {
         value: parsed,
         writable: true,
         enumerable: true,
-        configurable: true
+        configurable: true,
       });
       next();
     } catch (error) {
