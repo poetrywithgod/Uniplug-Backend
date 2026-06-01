@@ -302,9 +302,8 @@ export const getApplications = async (
       skip,
       take: limit,
       include: {
-        applicant: {
-          select: { firstName: true, lastName: true, email: true },
-        },
+        applicant: true,
+        school: true,
       },
       orderBy: { createdAt: 'desc' },
     }),
