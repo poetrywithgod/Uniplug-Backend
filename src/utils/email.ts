@@ -454,6 +454,7 @@ export const sendStaffOnboardingEmail = async (payload: {
   email: string;
   password: string;
   role: 'LECTURER' | 'HOSTEL_ADMIN';
+  adminId: string;
   schoolId: string;
   school: string;
   staffId: string;
@@ -464,6 +465,7 @@ export const sendStaffOnboardingEmail = async (payload: {
 
   const safeName = escapeHtml(payload.name);
   const safeStaffId = escapeHtml(payload.staffId);
+  const safeAdminId = escapeHtml(payload.adminId);
   const safeDepartment = escapeHtml(payload.department);
   const safePassword = escapeHtml(payload.password);
   const safeSchoolId = escapeHtml(payload.schoolId);
@@ -507,6 +509,7 @@ export const sendStaffOnboardingEmail = async (payload: {
                         <div class="row"><span class="label">School ID:</span> ${safeSchoolId}</div>
                         <div class="row"><span class="label">School:</span> ${safeSchool}</div>
                         <div class="row"><span class="label">Staff ID:</span> ${safeStaffId}</div>
+                        <div class="row"><span class="label">Admin ID:</span> ${safeAdminId}</div>
                         <div class="row"><span class="label">Department:</span> ${safeDepartment}</div>
                         <div class="row"><span class="label">Email:</span> ${escapeHtml(payload.email)}</div>
                         <div class="row"><span class="label">Password:</span> ${safePassword}</div>
