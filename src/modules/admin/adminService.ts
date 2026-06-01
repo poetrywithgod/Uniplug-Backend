@@ -8,6 +8,7 @@ import {
   getOtpExpiryDate,
 } from '../auth/authSecurity';
 import { sendStaffOnboardingEmail } from '../../utils/email';
+import { generateAdminId } from '../../utils/helpers';
 
 interface CreateStaffPayload {
   fullName: string;
@@ -77,6 +78,7 @@ const createStaffAccount = async (
   const { firstName, lastName } = splitFullName(payload.fullName);
   const passwordHash = await hashPassword(payload.password);
   const otpCode = generateOtpCode();
+  const adminId = generateAdminId(firstName, actor.schoolId);
 
   const user = canResubmitRejected
     ? await prisma.user.update({
@@ -85,6 +87,7 @@ const createStaffAccount = async (
           firstName,
           lastName,
           passwordHash,
+          adminId,
           staffId: payload.staffId,
           department: payload.department,
           role,
@@ -104,6 +107,7 @@ const createStaffAccount = async (
           role: true,
           schoolId: true,
           school: true,
+          adminId: true,
           staffId: true,
           department: true,
           isVerified: true,
@@ -116,6 +120,7 @@ const createStaffAccount = async (
           lastName,
           email: payload.email,
           phoneNumber: null,
+          adminId,
           staffId: payload.staffId,
           department: payload.department,
           schoolId: actor.schoolId,
@@ -135,6 +140,7 @@ const createStaffAccount = async (
           role: true,
           schoolId: true,
           school: true,
+          adminId: true,
           staffId: true,
           department: true,
           isVerified: true,
@@ -147,6 +153,7 @@ const createStaffAccount = async (
     email: payload.email,
     password: payload.password,
     role,
+    adminId,
     schoolId: tenant.schoolId,
     school: tenant.school,
     staffId: payload.staffId,
