@@ -757,7 +757,10 @@ const swaggerSpec = {
           { name: 'search', in: 'query', schema: { type: 'string' } },
         ],
         responses: {
-          200: { description: 'Target applications retrieved successfully' },
+          200: {
+            description:
+              'Target applications retrieved successfully with full application records, applicant details, and school data',
+          },
         },
       },
     },
