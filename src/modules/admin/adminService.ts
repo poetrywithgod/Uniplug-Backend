@@ -280,6 +280,7 @@ export const getApplications = async (
   // Build the where clause dynamically
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = { schoolId: actor.tenantId }; // querying the tenantId representing the school
+  const trimmedSearch = search?.trim();
 
   if (status) {
     where.status = status;
@@ -295,11 +296,24 @@ export const getApplications = async (
       },
     };
   }
-  if (search) {
+  if (trimmedSearch) {
     where.OR = [
-      { applicationNumber: { contains: search, mode: 'insensitive' } },
-      { applicant: { firstName: { contains: search, mode: 'insensitive' } } },
-      { applicant: { lastName: { contains: search, mode: 'insensitive' } } },
+      {
+        applicationNumber: {
+          contains: trimmedSearch,
+          mode: 'insensitive',
+        },
+      },
+      {
+        applicant: {
+          firstName: { contains: trimmedSearch, mode: 'insensitive' },
+        },
+      },
+      {
+        applicant: {
+          lastName: { contains: trimmedSearch, mode: 'insensitive' },
+        },
+      },
     ];
   }
 
@@ -308,9 +322,31 @@ export const getApplications = async (
       where,
       skip,
       take: limit,
-      include: {
-        applicant: true,
-        school: true,
+      select: {
+        id: true,
+        applicationNumber: true,
+        status: true,
+        session: true,
+        rejectionReason: true,
+        progressPercentage: true,
+        createdAt: true,
+        applicant: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+        school: {
+          select: {
+            id: true,
+            schoolName: true,
+            schoolId: true,
+          },
+        },
+        programmeSelection: true,
       },
       orderBy: { createdAt: 'desc' },
     }),
