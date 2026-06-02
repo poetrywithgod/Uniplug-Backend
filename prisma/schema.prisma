@@ -154,4 +154,7 @@ model Application {
   school    Tenant @relation(fields: [schoolId], references: [id])
 
   @@unique([applicantId, schoolId])
+  @@index([schoolId, status, createdAt])
+  @@index([schoolId, session, createdAt])
+  @@index([schoolId, createdAt])
 }
