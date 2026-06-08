@@ -406,6 +406,13 @@ export const updateApplicationStatus = async (
     data: dataToUpdate,
   });
 
+  if (payload.status === 'APPROVED') {
+    await prisma.user.update({
+      where: { id: application.applicantId },
+      data: { role: 'STUDENT' },
+    });
+  }
+
   return {
     message: 'Application status updated successfully',
     data: updatedApplication,
