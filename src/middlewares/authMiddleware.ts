@@ -8,6 +8,7 @@ type AllowedRole =
   | 'SUPER_ADMIN'
   | 'SCHOOL_ADMIN'
   | 'APPLICANT'
+  | 'STUDENT'
   | 'PARENT'
   | 'LECTURER'
   | 'HOSTEL_ADMIN';
