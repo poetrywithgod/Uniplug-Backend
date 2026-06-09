@@ -7,6 +7,7 @@ import authRoutes from './modules/auth/authRoute';
 import metaRoutes from './modules/meta/metaRoute';
 import superAdminRoutes from './modules/superAdmin/superAdminRoute';
 import applicationRoutes from './modules/application/applicationRoute';
+import hostelRoutes from './modules/hostel/hostelRoute';
 import catchAll404Errors from './middlewares/catchAll404Errors';
 import globalErrorHandler from './middlewares/errorHandler';
 import { healthCheck } from './utils/health';
@@ -57,6 +58,7 @@ app.use('/api/v1/super-admin', superAdminRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/meta', metaRoutes);
 app.use('/api/v1/application', applicationRoutes);
+app.use('/api/v1/hostels', hostelRoutes);
 
 app.get('/debug-sentry', (req, res) => {
   throw new Error('My first Sentry error!');

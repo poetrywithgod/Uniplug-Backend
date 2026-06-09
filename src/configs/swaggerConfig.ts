@@ -30,6 +30,10 @@ const swaggerSpec = {
       name: 'Application',
       description: 'Applicant admission application endpoints',
     },
+    {
+      name: 'Hostels',
+      description: 'Hostel management and student application endpoints',
+    },
   ],
   components: {
     securitySchemes: {
@@ -809,6 +813,173 @@ const swaggerSpec = {
         tags: ['Meta'],
         summary: 'Get Nigerian university departments',
         responses: { 200: { description: 'Departments list returned' } },
+      },
+    },
+    // --- Hostel Endpoints ---
+    '/hostels': {
+      post: {
+        tags: ['Hostels'],
+        summary: 'Create a new hostel (HOSTEL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: [
+                  'name',
+                  'type',
+                  'capacity',
+                  'price',
+                  'totalRooms',
+                  'totalBlocks',
+                  'totalWings',
+                  'spacePerRoom',
+                ],
+                properties: {
+                  name: { type: 'string', example: 'Amina Hall' },
+                  type: { type: 'string', enum: ['MALE', 'FEMALE', 'MIXED'] },
+                  capacity: { type: 'integer', example: 500 },
+                  price: { type: 'number', example: 120000 },
+                  totalRooms: { type: 'integer', example: 100 },
+                  totalBlocks: { type: 'integer', example: 2 },
+                  totalWings: { type: 'integer', example: 4 },
+                  spacePerRoom: { type: 'integer', example: 5 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Hostel created successfully' },
+        },
+      },
+      get: {
+        tags: ['Hostels'],
+        summary: 'Get all hostels for the tenant (HOSTEL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Hostels retrieved successfully' },
+        },
+      },
+    },
+    '/hostels/{id}': {
+      put: {
+        tags: ['Hostels'],
+        summary: 'Update a hostel (HOSTEL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  capacity: { type: 'integer' },
+                  price: { type: 'number' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Hostel updated successfully' },
+        },
+      },
+      delete: {
+        tags: ['Hostels'],
+        summary: 'Delete a hostel (HOSTEL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          204: { description: 'Hostel deleted successfully' },
+        },
+      },
+    },
+    '/hostels/{id}/apply': {
+      post: {
+        tags: ['Hostels'],
+        summary: 'Apply for a space in a hostel (STUDENT only)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          201: { description: 'Application submitted successfully' },
+        },
+      },
+    },
+    '/hostels/{id}/applications': {
+      get: {
+        tags: ['Hostels'],
+        summary: 'Get applications for a hostel (HOSTEL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          200: { description: 'Applications retrieved successfully' },
+        },
+      },
+    },
+    '/hostels/applications/{id}/review': {
+      patch: {
+        tags: ['Hostels'],
+        summary: 'Review an application (HOSTEL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: {
+                  status: { type: 'string', enum: ['APPROVED', 'REJECTED'] },
+                  rejectionReason: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Application reviewed successfully' },
+        },
       },
     },
   },
