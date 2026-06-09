@@ -91,45 +91,48 @@ type UploadedDocument {
 }
 
 model Tenant {
-  id           String        @id @default(auto()) @map("_id") @db.ObjectId
-  schoolName   String
-  schoolId     String        @unique
-  email        String
-  school       String
-  address      String
-  postalCode   String
-  isActive     Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  users        User[]
-  applications Application[]
+  id                 String              @id @default(auto()) @map("_id") @db.ObjectId
+  schoolName         String
+  schoolId           String              @unique
+  email              String
+  school             String
+  address            String
+  postalCode         String
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  users              User[]
+  applications       Application[]
+  hostels            Hostel[]
+  hostelApplications HostelApplication[]
 }
 
 model User {
-  id                  String         @id @default(auto()) @map("_id") @db.ObjectId
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
   firstName           String
   lastName            String
-  email               String         @unique
-  adminId             String?        @unique
+  email               String              @unique
+  adminId             String?             @unique
   phoneNumber         String?
   staffId             String?
   department          String?
   school              String?
   schoolId            String?
-  tenantId            String?        @db.ObjectId
-  tenant              Tenant?        @relation(fields: [tenantId], references: [id])
+  tenantId            String?             @db.ObjectId
+  tenant              Tenant?             @relation(fields: [tenantId], references: [id])
   passwordHash        String
   role                Role
-  isVerified          Boolean        @default(false)
-  approvalStatus      ApprovalStatus @default(VERIFIED)
+  isVerified          Boolean             @default(false)
+  approvalStatus      ApprovalStatus      @default(VERIFIED)
   approvalRemark      String?
   emailOtpHash        String?
   emailOtpExpiresAt   DateTime?
   resetTokenHash      String?
   resetTokenExpiresAt DateTime?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
   applications        Application[]
+  hostelApplications  HostelApplication[]
 }
 
 model Application {
@@ -158,4 +161,56 @@ model Application {
   @@index([schoolId, status, createdAt])
   @@index([schoolId, session, createdAt])
   @@index([schoolId, createdAt])
+}
+
+enum HostelType {
+  MALE
+  FEMALE
+  MIXED
+}
+
+enum HostelApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Hostel {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  type         HostelType
+  capacity     Int
+  price        Float
+  totalRooms   Int
+  totalBlocks  Int
+  totalWings   Int
+  spacePerRoom Int
+  tenantId     String     @db.ObjectId
+  tenant       Tenant     @relation(fields: [tenantId], references: [id])
+
+  createAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications HostelApplication[]
+
+  @@index([tenantId])
+}
+
+model HostelApplication {
+  id              String                  @id @default(auto()) @map("_id") @db.ObjectId
+  studentId       String                  @db.ObjectId
+  student         User                    @relation(fields: [studentId], references: [id])
+  hostelId        String                  @db.ObjectId
+  hostel          Hostel                  @relation(fields: [hostelId], references: [id])
+  tenantId        String                  @db.ObjectId
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id])
+  status          HostelApplicationStatus @default(PENDING)
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId, status])
+  @@index([hostelId, status])
+  @@index([tenantId])
 }
