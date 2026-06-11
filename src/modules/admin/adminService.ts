@@ -94,7 +94,7 @@ const createStaffAccount = async (
           schoolId: actor.schoolId,
           school: actor.school,
           tenantId: actor.tenantId,
-          approvalStatus: 'PENDING',
+          approvalStatus: 'VERIFIED',
           approvalRemark: null,
           isVerified: false,
           emailOtpHash: hashOtpCode(otpCode),
@@ -129,7 +129,7 @@ const createStaffAccount = async (
           passwordHash,
           role,
           isVerified: false,
-          approvalStatus: 'PENDING',
+          approvalStatus: 'VERIFIED',
           emailOtpHash: hashOtpCode(otpCode),
           emailOtpExpiresAt: getOtpExpiryDate(),
         },
@@ -162,7 +162,7 @@ const createStaffAccount = async (
   });
 
   return {
-    message: `${role === 'LECTURER' ? 'Lecturer' : 'Hostel admin'} account submitted successfully. OTP and login details sent by email. Await school admin verification.`,
+    message: `${role === 'LECTURER' ? 'Lecturer' : 'Hostel admin'} account created and approved successfully. OTP and login details sent by email.`,
     user,
   };
 };
