@@ -131,7 +131,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
             schoolId: payload.schoolId,
             tenantId: tenant.id,
             isVerified: false,
-            approvalStatus: 'PENDING',
+            approvalStatus: 'VERIFIED',
             approvalRemark: null,
             emailOtpHash: hashOtpCode(otpCode),
             emailOtpExpiresAt: getOtpExpiryDate(),
@@ -164,7 +164,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
               schoolId: payload.schoolId,
               tenantId: tenant.id,
               isVerified: false,
-              approvalStatus: 'PENDING',
+              approvalStatus: 'VERIFIED',
               emailOtpHash: hashOtpCode(otpCode),
               emailOtpExpiresAt: getOtpExpiryDate(),
             },
@@ -193,7 +193,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
 
   return {
     message:
-      'School admin account submitted successfully. OTP and login details have been sent by email. Await super admin verification.',
+      'School admin account created and approved successfully. OTP and login details have been sent by email.',
     user,
   };
 };
