@@ -1,9 +1,15 @@
 import { Request, Response } from 'express';
+import createError from 'http-errors';
 import * as hostelService from './hostelService';
 import catchAsync from '../../utils/catchAsync';
 
 export const createHostel = catchAsync(async (req: Request, res: Response) => {
   const user = res.locals.user as { tenantId: string };
+
+  if (!user.tenantId) {
+    throw createError(403, 'User is not linked to any school (tenant).');
+  }
+
   const hostel = await hostelService.createHostel(req.body, user.tenantId);
 
   res.status(201).json({
@@ -14,6 +20,11 @@ export const createHostel = catchAsync(async (req: Request, res: Response) => {
 
 export const updateHostel = catchAsync(async (req: Request, res: Response) => {
   const user = res.locals.user as { tenantId: string };
+
+  if (!user.tenantId) {
+    throw createError(403, 'User is not linked to any school (tenant).');
+  }
+
   const hostel = await hostelService.updateHostel(
     req.params.id as string,
     user.tenantId,
@@ -28,6 +39,11 @@ export const updateHostel = catchAsync(async (req: Request, res: Response) => {
 
 export const deleteHostel = catchAsync(async (req: Request, res: Response) => {
   const user = res.locals.user as { tenantId: string };
+
+  if (!user.tenantId) {
+    throw createError(403, 'User is not linked to any school (tenant).');
+  }
+
   await hostelService.deleteHostel(req.params.id as string, user.tenantId);
 
   res.status(204).json({
@@ -38,6 +54,11 @@ export const deleteHostel = catchAsync(async (req: Request, res: Response) => {
 
 export const getHostels = catchAsync(async (req: Request, res: Response) => {
   const user = res.locals.user as { tenantId: string };
+
+  if (!user.tenantId) {
+    throw createError(403, 'User is not linked to any school (tenant).');
+  }
+
   const hostels = await hostelService.getHostels(user.tenantId);
 
   res.status(200).json({
@@ -49,6 +70,11 @@ export const getHostels = catchAsync(async (req: Request, res: Response) => {
 export const getAvailableHostels = catchAsync(
   async (req: Request, res: Response) => {
     const user = res.locals.user as { tenantId: string };
+
+    if (!user.tenantId) {
+      throw createError(403, 'Student is not linked to any school.');
+    }
+
     const hostels = await hostelService.getHostels(user.tenantId);
 
     res.status(200).json({
@@ -61,6 +87,11 @@ export const getAvailableHostels = catchAsync(
 export const applyForHostel = catchAsync(
   async (req: Request, res: Response) => {
     const user = res.locals.user as { id: string; tenantId: string };
+
+    if (!user.tenantId) {
+      throw createError(403, 'Student is not linked to any school.');
+    }
+
     const application = await hostelService.applyForHostel(
       req.params.id as string,
       user.id,
@@ -78,6 +109,11 @@ export const applyForHostel = catchAsync(
 export const getHostelApplications = catchAsync(
   async (req: Request, res: Response) => {
     const user = res.locals.user as { tenantId: string };
+
+    if (!user.tenantId) {
+      throw createError(403, 'User is not linked to any school.');
+    }
+
     const applications = await hostelService.getHostelApplications(
       req.params.id as string,
       user.tenantId,
@@ -93,6 +129,11 @@ export const getHostelApplications = catchAsync(
 export const reviewHostelApplication = catchAsync(
   async (req: Request, res: Response) => {
     const user = res.locals.user as { tenantId: string };
+
+    if (!user.tenantId) {
+      throw createError(403, 'User is not linked to any school.');
+    }
+
     const { status, rejectionReason } = req.body;
 
     const application = await hostelService.reviewHostelApplication(
