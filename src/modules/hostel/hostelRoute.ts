@@ -11,6 +11,13 @@ import {
 const router = Router();
 
 // Routes for STUDENTS
+router.get(
+  '/available',
+  requireAuth,
+  requireRole('STUDENT'),
+  hostelController.getAvailableHostels,
+);
+
 router.post(
   '/:id/apply',
   requireAuth,
