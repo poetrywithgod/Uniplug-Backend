@@ -864,6 +864,61 @@ const swaggerSpec = {
         },
       },
     },
+    '/hostels/available': {
+      get: {
+        tags: ['Hostels'],
+        summary:
+          "Get all available hostels in the student's school (STUDENT only)",
+        description:
+          'Retrieve a list of all hostels with available spaces. Students can use this to browse hostels before applying. Returns hostel details including name, type, capacity, available spaces, and pricing information.',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: 'Available hostels retrieved successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'string', example: 'success' },
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', description: 'Hostel ID' },
+                          name: { type: 'string', example: 'Amina Hall' },
+                          type: {
+                            type: 'string',
+                            enum: ['MALE', 'FEMALE', 'MIXED'],
+                            example: 'FEMALE',
+                          },
+                          capacity: { type: 'integer', example: 500 },
+                          price: { type: 'number', example: 120000 },
+                          availableSpaces: {
+                            type: 'integer',
+                            example: 250,
+                            description: 'Number of spaces available',
+                          },
+                          totalRooms: { type: 'integer', example: 100 },
+                          totalBlocks: { type: 'integer', example: 2 },
+                          totalWings: { type: 'integer', example: 4 },
+                          spacePerRoom: { type: 'integer', example: 5 },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          403: {
+            description:
+              'Unauthorized - Only students can access this endpoint',
+          },
+        },
+      },
+    },
     '/hostels/{id}': {
       put: {
         tags: ['Hostels'],
