@@ -46,6 +46,18 @@ export const getHostels = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+export const getAvailableHostels = catchAsync(
+  async (req: Request, res: Response) => {
+    const user = res.locals.user as { tenantId: string };
+    const hostels = await hostelService.getHostels(user.tenantId);
+
+    res.status(200).json({
+      status: 'success',
+      data: hostels,
+    });
+  },
+);
+
 export const applyForHostel = catchAsync(
   async (req: Request, res: Response) => {
     const user = res.locals.user as { id: string; tenantId: string };
