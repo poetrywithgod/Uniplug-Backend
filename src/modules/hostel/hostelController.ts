@@ -69,13 +69,13 @@ export const getHostels = catchAsync(async (req: Request, res: Response) => {
 
 export const getAvailableHostels = catchAsync(
   async (req: Request, res: Response) => {
-    const user = res.locals.user as { tenantId: string };
+    const user = res.locals.user as { id: string; tenantId: string };
 
     if (!user.tenantId) {
       throw createError(403, 'Student is not linked to any school.');
     }
 
-    const hostels = await hostelService.getHostels(user.tenantId);
+    const hostels = await hostelService.getHostels(user.tenantId, user.id);
 
     res.status(200).json({
       status: 'success',
