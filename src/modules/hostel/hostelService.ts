@@ -57,9 +57,26 @@ export const deleteHostel = async (id: string, tenantId: string) => {
   });
 };
 
-export const getHostels = async (tenantId: string) => {
+export const getHostels = async (
+  tenantId: string,
+  excludeStudentId?: string,
+) => {
+  const whereClause: any = { tenantId };
+
+  if (excludeStudentId) {
+    // Exclude hostels the student has already applied for (PENDING or APPROVED)
+    whereClause.NOT = {
+      applications: {
+        some: {
+          studentId: excludeStudentId,
+          status: { in: ['PENDING', 'APPROVED'] },
+        },
+      },
+    };
+  }
+
   const hostels = await prisma.hostel.findMany({
-    where: { tenantId },
+    where: whereClause,
     include: {
       _count: {
         select: {
