@@ -5,6 +5,8 @@ import {
   declineSchoolAdmin,
   onboardSchoolAdmin,
   onboardTenant,
+  handleGetTenants,
+  handleGetSchoolAdmins,
 } from './superAdminController';
 import { requireAuth, requireRole } from '../../middlewares/authMiddleware';
 import { validateRequest } from '../../utils/validation';
@@ -17,6 +19,9 @@ import {
 const router = express.Router();
 
 router.use(requireAuth, requireRole('SUPER_ADMIN'));
+
+router.get('/tenants', handleGetTenants);
+router.get('/tenants/:tenantId/school-admins', handleGetSchoolAdmins);
 
 router.post('/tenants', validateRequest(createTenantSchema), onboardTenant);
 router.post(
