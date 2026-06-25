@@ -330,6 +330,9 @@ export const getApplications = async (
         rejectionReason: true,
         progressPercentage: true,
         createdAt: true,
+        personalDetails: true,
+        academicHistory: true,
+        documents: true,
         applicant: {
           select: {
             id: true,
