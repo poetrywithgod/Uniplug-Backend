@@ -6,6 +6,8 @@ import {
   createTenant,
   rejectSchoolAdmin,
   verifySchoolAdmin,
+  getTenants,
+  getSchoolAdmins,
 } from './superAdminService';
 
 export const onboardTenant = catchAsync(
@@ -50,6 +52,32 @@ export const declineSchoolAdmin = catchAsync(
       ? req.params.userId[0]
       : req.params.userId;
     const result = await rejectSchoolAdmin(userId, req.body?.remark);
+
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const handleGetTenants = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await getTenants();
+
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const handleGetSchoolAdmins = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const tenantId = Array.isArray(req.params.tenantId)
+      ? req.params.tenantId[0]
+      : req.params.tenantId;
+
+    const result = await getSchoolAdmins(tenantId);
 
     res.status(200).json({
       status: 'success',
