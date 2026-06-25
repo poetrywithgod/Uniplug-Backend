@@ -474,6 +474,14 @@ const swaggerSpec = {
       },
     },
     '/super-admin/tenants': {
+      get: {
+        tags: ['SuperAdmin'],
+        summary: 'List all tenants (schools)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Tenants retrieved successfully' },
+        },
+      },
       post: {
         tags: ['SuperAdmin'],
         summary: 'Create tenant (school)',
@@ -515,6 +523,26 @@ const swaggerSpec = {
           },
         },
         responses: { 201: { description: 'Tenant created' } },
+      },
+    },
+    '/super-admin/tenants/{tenantId}/school-admins': {
+      get: {
+        tags: ['SuperAdmin'],
+        summary: 'List all school admins for a particular school tenant',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'tenantId',
+            in: 'path',
+            required: true,
+            description: 'Tenant MongoDB ID or string schoolId (e.g. UPH-009)',
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          200: { description: 'School admins retrieved successfully' },
+          404: { description: 'Tenant not found' },
+        },
       },
     },
     '/super-admin/school-admins': {
