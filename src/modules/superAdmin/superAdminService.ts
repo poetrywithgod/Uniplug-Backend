@@ -260,3 +260,59 @@ export const rejectSchoolAdmin = async (userId: string, remark?: string) => {
     user: updatedUser,
   };
 };
+
+export const getTenants = async () => {
+  const tenants = await prisma.tenant.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return {
+    tenants,
+  };
+};
+
+export const getSchoolAdmins = async (tenantIdentifier: string) => {
+  // Support searching by Mongo ObjectId (24 chars hex) or string schoolId (e.g. UPH-009)
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(tenantIdentifier);
+
+  const tenant = await prisma.tenant.findFirst({
+    where: {
+      OR: [
+        { id: isObjectId ? tenantIdentifier : undefined },
+        { schoolId: tenantIdentifier },
+      ],
+    },
+  });
+
+  if (!tenant) {
+    throw createError(404, 'Tenant not found for the provided identifier.');
+  }
+
+  const schoolAdmins = await prisma.user.findMany({
+    where: {
+      tenantId: tenant.id,
+      role: 'SCHOOL_ADMIN',
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      adminId: true,
+      phoneNumber: true,
+      role: true,
+      school: true,
+      schoolId: true,
+      isVerified: true,
+      approvalStatus: true,
+      approvalRemark: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return {
+    schoolAdmins,
+  };
+};
