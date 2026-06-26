@@ -8,6 +8,7 @@ We will introduce fields track the academic session and any rejection feedback.
 
 **Updates to `Application` model:**
 
+
 - `session String?`
 - `rejectionReason String?`
 
