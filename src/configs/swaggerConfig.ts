@@ -34,6 +34,10 @@ const swaggerSpec = {
       name: 'Hostels',
       description: 'Hostel management and student application endpoints',
     },
+    {
+      name: 'CourseManagement',
+      description: 'Academic departments, courses, offerings, assignments, enrollments, and grading',
+    },
   ],
   components: {
     securitySchemes: {
@@ -1071,6 +1075,267 @@ const swaggerSpec = {
         },
         responses: {
           200: { description: 'Application reviewed successfully' },
+        },
+      },
+    },
+    // --- Course Management Endpoints ---
+    '/departments': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Create a new department (SCHOOL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                  name: { type: 'string', example: 'Computer Science' },
+                  hodId: { type: 'string', example: '60d5ec4b868e5a2b3479427b', description: 'User ID of HOD (must have HOD role)' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Department created successfully' },
+        },
+      },
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get all departments in the school (SCHOOL_ADMIN or HOD)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Departments retrieved successfully' },
+        },
+      },
+    },
+    '/courses': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Create a master course definition (HOD only)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['courseName', 'courseCode', 'creditUnits', 'level', 'category', 'departmentId'],
+                properties: {
+                  courseName: { type: 'string', example: 'Data Structures' },
+                  courseCode: { type: 'string', example: 'CSC301' },
+                  creditUnits: { type: 'integer', example: 3 },
+                  level: { type: 'integer', example: 300 },
+                  category: { type: 'string', enum: ['CORE', 'ELECTIVE', 'GENERAL_STUDIES'], example: 'CORE' },
+                  description: { type: 'string', example: 'Fundamentals of algorithms and data structures' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427a' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Course created successfully' },
+          409: { description: 'Course code already exists' },
+        },
+      },
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get courses by department (SCHOOL_ADMIN, HOD, LECTURER)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'departmentId', in: 'query', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Courses retrieved successfully' },
+        },
+      },
+    },
+    '/course-offerings': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Create an offering of a course for a semester/session (HOD only)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['courseId', 'academicSession', 'semester'],
+                properties: {
+                  courseId: { type: 'string', example: '60d5ec4b868e5a2b3479427c' },
+                  academicSession: { type: 'string', example: '2025/2026' },
+                  semester: { type: 'string', example: 'FIRST_SEMESTER' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Course offering created successfully' },
+        },
+      },
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get active course offerings (HOD, LECTURER, STUDENT)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Offerings retrieved successfully' },
+        },
+      },
+    },
+    '/course-assignments/request': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Request assignment to teach a course offering (LECTURER only)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['courseOfferingId'],
+                properties: {
+                  courseOfferingId: { type: 'string', example: '60d5ec4b868e5a2b3479427e' },
+                  role: { type: 'string', enum: ['LEAD_LECTURER', 'CO_LECTURER', 'TA'], default: 'LEAD_LECTURER' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Assignment requested successfully' },
+        },
+      },
+    },
+    '/course-assignments/{assignmentId}/approve': {
+      patch: {
+        tags: ['CourseManagement'],
+        summary: 'Approve or reject a lecturer assignment request (HOD only)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'assignmentId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: {
+                  status: { type: 'string', enum: ['APPROVED', 'REJECTED'] },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Assignment request updated successfully' },
+        },
+      },
+    },
+    '/course-assignments/pending': {
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get all pending lecturer assignments in the school (HOD only)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Pending requests retrieved successfully' },
+        },
+      },
+    },
+    '/course-enrollments/register': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Register/enroll in course offerings (STUDENT only)',
+        description: 'Enrolls student. Verifies that the course level is equal or lower than the student’s current level.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['courseOfferingIds'],
+                properties: {
+                  courseOfferingIds: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    example: ['60d5ec4b868e5a2b3479427e'],
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Enrollment registration submitted' },
+        },
+      },
+    },
+    '/course-enrollments/my-courses': {
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get current student\'s course registrations (STUDENT only)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'My course registrations retrieved' },
+        },
+      },
+    },
+    '/course-offerings/{courseOfferingId}/students': {
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get students roster for a course offering (LECTURER, HOD, SCHOOL_ADMIN)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'courseOfferingId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Student roster retrieved' },
+        },
+      },
+    },
+    '/course-offerings/{courseOfferingId}/grades': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Submit/update grades for enrolled students (LECTURER only)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'courseOfferingId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['grades'],
+                properties: {
+                  grades: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      required: ['studentId', 'score'],
+                      properties: {
+                        studentId: { type: 'string', example: '60d5ec4b868e5a2b3479427f' },
+                        score: { type: 'number', minimum: 0, maximum: 100, example: 85 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Grades updated successfully' },
         },
       },
     },

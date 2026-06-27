@@ -11,7 +11,8 @@ type AllowedRole =
   | 'STUDENT'
   | 'PARENT'
   | 'LECTURER'
-  | 'HOSTEL_ADMIN';
+  | 'HOSTEL_ADMIN'
+  | 'HOD';
 
 const getBearerToken = (authHeader?: string): string | null => {
   if (!authHeader) {
@@ -62,7 +63,8 @@ export const requireAuth = async (
     const requiresApproval =
       user.role === 'SCHOOL_ADMIN' ||
       user.role === 'LECTURER' ||
-      user.role === 'HOSTEL_ADMIN';
+      user.role === 'HOSTEL_ADMIN' ||
+      user.role === 'HOD';
 
     if (requiresApproval && user.approvalStatus !== 'VERIFIED') {
       return next(
