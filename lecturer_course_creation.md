@@ -109,88 +109,169 @@ Benefits:
 
 ---
 
-# Database Design
+# Database Design (Prisma & MongoDB)
 
----
+All models include multi-tenant isolation via `tenantId` mapping to the `Tenant` model.
 
-## Departments
-
-```sql
-departments
+### Role (Enum Update)
+```prisma
+enum Role {
+  SUPER_ADMIN
+  SCHOOL_ADMIN
+  APPLICANT
+  STUDENT
+  PARENT
+  LECTURER
+  HOSTEL_ADMIN
+  HOD
+}
 ```
 
-| Field      | Type      |
-| ---------- | --------- |
-| id         | bigint    |
-| faculty_id | bigint    |
-| name       | varchar   |
-| hod_id     | bigint    |
-| created_at | timestamp |
-| updated_at | timestamp |
-
----
-
-## Courses
-
-Master course definitions.
-
-```sql
-courses
+### Department
+```prisma
+model Department {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  hodId     String?  @db.ObjectId // References User model (HOD Role)
+  tenantId  String   @db.ObjectId // References Tenant model
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 ```
 
-| Field             | Type      |
-| ----------------- | --------- |
-| id                | bigint    |
-| department_id     | bigint    |
-| course_name       | varchar   |
-| course_code       | varchar   |
-| credit_units      | integer   |
-| description       | text      |
-| created_by_hod_id | bigint    |
-| status            | varchar   |
-| created_at        | timestamp |
-| updated_at        | timestamp |
+### Course
+```prisma
+enum CourseCategory {
+  CORE
+  ELECTIVE
+  GENERAL_STUDIES
+}
 
-Example:
+model Course {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  courseName       String
+  courseCode       String         @unique
+  creditUnits      Int
+  level            Int            // e.g. 100, 200, 300, 400, 500
+  category         CourseCategory
+  description      String?
+  departmentId     String         @db.ObjectId
+  createdByHodId   String         @db.ObjectId // References User model
+  status           String         @default("ACTIVE")
+  tenantId         String         @db.ObjectId // References Tenant model
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+```
 
-```json
-{
-  "course_name": "Data Structures & Algorithms",
-  "course_code": "CSC301",
-  "department_id": 1,
-  "credit_units": 3
+### Course Offering
+```prisma
+model CourseOffering {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId        String   @db.ObjectId // References Course model
+  academicSession String   // e.g. "2025/2026"
+  semester        String   // e.g. "FIRST_SEMESTER" or "SECOND_SEMESTER"
+  status          String   @default("ACTIVE")
+  tenantId        String   @db.ObjectId // References Tenant model
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+```
+
+### Course Assignment
+```prisma
+enum AssignmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REMOVED
+}
+
+enum LecturerRole {
+  LEAD_LECTURER
+  CO_LECTURER
+  TA
+}
+
+model CourseAssignment {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  courseOfferingId String           @db.ObjectId // References CourseOffering model
+  lecturerId       String           @db.ObjectId // References User model
+  assignedById     String?          @db.ObjectId // References User model (HOD/Admin)
+  status           AssignmentStatus @default(PENDING)
+  role             LecturerRole     @default(LEAD_LECTURER)
+  tenantId         String           @db.ObjectId // References Tenant model
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+```
+
+### Course Enrollment
+```prisma
+enum EnrollmentStatus {
+  PENDING_APPROVAL
+  ENROLLED
+  REJECTED
+}
+
+model CourseEnrollment {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  studentId        String           @db.ObjectId // References User model (STUDENT role)
+  courseOfferingId String           @db.ObjectId // References CourseOffering model
+  status           EnrollmentStatus @default(PENDING_APPROVAL)
+  tenantId         String           @db.ObjectId // References Tenant model
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+```
+
+### Grade
+```prisma
+model Grade {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId        String   @db.ObjectId // References User model
+  courseOfferingId String   @db.ObjectId // References CourseOffering model
+  score            Float
+  gradedById       String   @db.ObjectId // References User model (Lecturer)
+  tenantId         String   @db.ObjectId // References Tenant model
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 ```
 
 ---
 
-## Course Offerings
+# HTTP API Routes
 
-Specific semester/session instances.
+All endpoints below require authentication and verify multi-tenancy context using headers or decoded JWT values.
 
-```sql
-course_offerings
-```
+### 1. Department Endpoints
+* **`POST /departments`** (School Admin creates department and assigns HOD)
+* **`GET /departments`** (Get all departments)
 
-| Field               | Type      |
-| ------------------- | --------- |
-| id                  | bigint    |
-| course_id           | bigint    |
-| academic_session_id | bigint    |
-| semester_id         | bigint    |
-| status              | varchar   |
-| created_at          | timestamp |
-| updated_at          | timestamp |
+### 2. Course Endpoints
+* **`POST /courses`** (HOD creates a master course; validates level and category)
+* **`GET /courses`** (Get courses by department)
 
-Example:
+### 3. Course Offering Endpoints
+* **`POST /course-offerings`** (HOD creates an offering for a session/semester)
+* **`GET /course-offerings`** (Get active offerings for registration)
 
-```json
-{
-  "course_id": 1,
-  "academic_session": "2025/2026",
-  "semester": "First Semester"
-}
-```
+### 4. Lecturer Assignment Endpoints
+* **`POST /course-assignments/request`** (Lecturer requests assignment to an offering)
+* **`PATCH /course-assignments/{assignmentId}/approve`** (HOD approves/rejects assignment)
+* **`GET /course-assignments/pending`** (HOD lists pending lecturer assignments)
+
+### 5. Student Enrollment Endpoints
+* **`POST /course-enrollments/register`**:
+  * Student registers for course offerings.
+  * System checks student's current level (stored as `level` Int in `User` profile).
+  * Student can only register for offerings matching their level (or lower carryovers).
+* **`GET /course-enrollments/my-courses`** (Student gets list of registered courses)
+
+### 6. Lecturer Roster & Grading Endpoints
+* **`GET /course-offerings/{courseOfferingId}/students`** (Lecturer views enrolled students roster for their assigned offering)
+* **`POST /course-offerings/{courseOfferingId}/grades`** (Lecturer submits/updates scores for students)
 
 ---
 
@@ -206,6 +287,8 @@ Input:
 * Course Code
 * Department
 * Credit Units
+* Level (e.g. 100, 200, 300, 400, 500)
+* Category (CORE, ELECTIVE, GENERAL_STUDIES)
 * Description
 
 Example:
@@ -214,8 +297,10 @@ Example:
 {
   "course_name": "Artificial Intelligence",
   "course_code": "CSC401",
-  "department_id": 1,
-  "credit_units": 3
+  "department_id": "60d5ec4b868e5a2b3479427b",
+  "credit_units": 3,
+  "level": 400,
+  "category": "CORE"
 }
 ```
 
@@ -241,7 +326,7 @@ Example:
 
 ```json
 {
-  "course_id": 1,
+  "course_id": "60d5ec4b868e5a2b3479427c",
   "academic_session": "2025/2026",
   "semester": "First Semester"
 }
@@ -307,11 +392,6 @@ Actions:
 
 ---
 
-## Course Assignment Table
-
-```sql
-course_assignments
-```
 
 | Field              | Type      |
 | ------------------ | --------- |
@@ -374,6 +454,11 @@ NOT:
 Student
 → Lecturer
 
+## Level-Based Enrollment Rules:
+* **How Student Level is Determined**: A student's level is stored as an integer field (`level`) in their `User` profile record (e.g., 100, 200, 300, 400, 500). When a user register/onboards as a student, this field is set and can be incremented annually (at the start of each new academic session).
+* A student is allowed to register for `CourseOfferings` belonging to courses of their current academic level.
+* A student may also register for lower-level courses if they are carryovers (failed or missed in previous semesters).
+
 ---
 
 ## Enrollment Table
@@ -387,6 +472,7 @@ course_enrollments
 | id                 | bigint    |
 | student_id         | bigint    |
 | course_offering_id | bigint    |
+| status             | varchar   | -- PENDING_APPROVAL, ENROLLED
 | created_at         | timestamp |
 
 ---
