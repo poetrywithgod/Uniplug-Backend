@@ -11,9 +11,8 @@ import { sendSchoolAdminOnboardingEmail } from '../../utils/email';
 
 interface CreateTenantPayload {
   schoolName: string;
-  schoolId: string;
   email: string;
-  school: string;
+  school?: string;
   address: string;
   postalCode: string;
 }
@@ -22,7 +21,6 @@ interface CreateSchoolAdminPayload {
   fullName: string;
   schoolId: string;
   email: string;
-  school: string;
   password: string;
 }
 
@@ -47,26 +45,76 @@ const generateAdminId = (firstName: string, schoolId: string): string => {
   return `${prefix}-${initial}-${randomDigits}`;
 };
 
+const deriveShortSchoolName = (schoolName: string): string => {
+  const cleanName = schoolName.replace(/[^a-zA-Z0-9\s]/g, '');
+  const words = cleanName.trim().split(/\s+/);
+  
+  if (words.length >= 3) {
+    return words.map(w => w.charAt(0).toUpperCase()).join('');
+  } else if (words.length === 2) {
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  } else if (words.length === 1 && words[0].length > 0) {
+    return words[0];
+  }
+  return 'School';
+};
+
+const generateUniqueSchoolId = async (schoolName: string): Promise<string> => {
+  const cleanName = schoolName.replace(/[^a-zA-Z0-9\s]/g, '');
+  const words = cleanName.trim().split(/\s+/);
+  let prefix = '';
+  
+  if (words.length >= 2) {
+    prefix = words.map(w => w.charAt(0).toUpperCase()).join('');
+  } else if (words.length === 1 && words[0].length > 0) {
+    prefix = words[0].substring(0, 3).toUpperCase();
+  } else {
+    prefix = 'SCH';
+  }
+
+  if (!prefix) prefix = 'SCH';
+
+  let attempts = 0;
+  while (attempts < 100) {
+    const randomDigits = Math.floor(100 + Math.random() * 900).toString();
+    const schoolId = `${prefix}-${randomDigits}`;
+    
+    const existing = await prisma.tenant.findUnique({
+      where: { schoolId },
+    });
+    
+    if (!existing) {
+      return schoolId;
+    }
+    attempts++;
+  }
+  
+  return `${prefix}-${Date.now().toString().slice(-4)}`;
+};
+
 export const createTenant = async (payload: CreateTenantPayload) => {
   const existingTenant = await prisma.tenant.findFirst({
     where: {
-      OR: [{ schoolId: payload.schoolId }, { email: payload.email }],
+      email: payload.email,
     },
   });
 
   if (existingTenant) {
     throw createError(
       409,
-      'Tenant with the provided school ID or email already exists.',
+      'Tenant with the provided email already exists.',
     );
   }
+
+  const schoolId = await generateUniqueSchoolId(payload.schoolName);
+  const school = payload.school || deriveShortSchoolName(payload.schoolName);
 
   const tenant = await prisma.tenant.create({
     data: {
       schoolName: payload.schoolName,
-      schoolId: payload.schoolId,
+      schoolId,
       email: payload.email,
-      school: payload.school,
+      school,
       address: payload.address,
       postalCode: payload.postalCode,
       isActive: true,
@@ -97,13 +145,6 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
     throw createError(404, 'Tenant not found for the provided schoolId.');
   }
 
-  if (tenant.school !== payload.school) {
-    throw createError(
-      400,
-      'School does not match the tenant record for this schoolId.',
-    );
-  }
-
   const existingUser = await prisma.user.findUnique({
     where: { email: payload.email },
   });
@@ -127,7 +168,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
             passwordHash,
             role: 'SCHOOL_ADMIN',
             adminId,
-            school: payload.school,
+            school: tenant.schoolName,
             schoolId: payload.schoolId,
             tenantId: tenant.id,
             isVerified: false,
@@ -160,7 +201,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
               passwordHash,
               role: 'SCHOOL_ADMIN',
               adminId,
-              school: payload.school,
+              school: tenant.schoolName,
               schoolId: payload.schoolId,
               tenantId: tenant.id,
               isVerified: false,
@@ -187,7 +228,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
     password: payload.password,
     adminId,
     schoolId: payload.schoolId,
-    school: payload.school,
+    school: tenant.schoolName,
     otpCode,
   });
 
@@ -291,6 +332,35 @@ export const getSchoolAdmins = async (tenantIdentifier: string) => {
   const schoolAdmins = await prisma.user.findMany({
     where: {
       tenantId: tenant.id,
+      role: 'SCHOOL_ADMIN',
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      adminId: true,
+      phoneNumber: true,
+      role: true,
+      school: true,
+      schoolId: true,
+      isVerified: true,
+      approvalStatus: true,
+      approvalRemark: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return {
+    schoolAdmins,
+  };
+};
+
+export const getAllSchoolAdmins = async () => {
+  const schoolAdmins = await prisma.user.findMany({
+    where: {
       role: 'SCHOOL_ADMIN',
     },
     select: {

@@ -7,6 +7,7 @@ import {
   onboardTenant,
   handleGetTenants,
   handleGetSchoolAdmins,
+  handleGetAllSchoolAdmins,
 } from './superAdminController';
 import { requireAuth, requireRole } from '../../middlewares/authMiddleware';
 import { validateRequest } from '../../utils/validation';
@@ -21,6 +22,7 @@ const router = express.Router();
 router.use(requireAuth, requireRole('SUPER_ADMIN'));
 
 router.get('/tenants', handleGetTenants);
+router.get('/school-admins', handleGetAllSchoolAdmins);
 router.get('/tenants/:tenantId/school-admins', handleGetSchoolAdmins);
 
 router.post('/tenants', validateRequest(createTenantSchema), onboardTenant);
