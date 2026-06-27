@@ -22,6 +22,7 @@ enum Role {
   PARENT
   LECTURER
   HOSTEL_ADMIN
+  HOD
 }
 
 enum ApprovalStatus {
@@ -105,6 +106,12 @@ model Tenant {
   applications       Application[]
   hostels            Hostel[]
   hostelApplications HostelApplication[]
+  departments        Department[]
+  courses            Course[]
+  courseOfferings    CourseOffering[]
+  courseAssignments  CourseAssignment[]
+  courseEnrollments  CourseEnrollment[]
+  grades             Grade[]
 }
 
 model User {
@@ -129,10 +136,17 @@ model User {
   emailOtpExpiresAt   DateTime?
   resetTokenHash      String?
   resetTokenExpiresAt DateTime?
+  level               Int?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   applications        Application[]
   hostelApplications  HostelApplication[]
+  courseEnrollments   CourseEnrollment[]
+  grades              Grade[]             @relation("StudentGrades")
+  gradesGiven         Grade[]             @relation("GradedByLecturer")
+  courseAssignments   CourseAssignment[]  @relation("LecturerAssignments")
+  assignedByMe        CourseAssignment[]  @relation("AssignedByHOD")
+  departmentsOwned    Department[]        @relation("DepartmentHOD")
 }
 
 model Application {
@@ -213,4 +227,140 @@ model HostelApplication {
   @@index([studentId, status])
   @@index([hostelId, status])
   @@index([tenantId])
+}
+
+model Department {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  hodId     String?  @db.ObjectId
+  hod       User?    @relation("DepartmentHOD", fields: [hodId], references: [id])
+  tenantId  String   @db.ObjectId
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  courses   Course[]
+
+  @@index([tenantId])
+}
+
+enum CourseCategory {
+  CORE
+  ELECTIVE
+  GENERAL_STUDIES
+}
+
+model Course {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  courseName     String
+  courseCode     String           @unique
+  creditUnits    Int
+  level          Int
+  category       CourseCategory
+  description    String?
+  departmentId   String           @db.ObjectId
+  department     Department       @relation(fields: [departmentId], references: [id])
+  createdByHodId String           @db.ObjectId
+  status         String           @default("ACTIVE")
+  tenantId       String           @db.ObjectId
+  tenant         Tenant           @relation(fields: [tenantId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  offerings      CourseOffering[]
+
+  @@index([tenantId])
+  @@index([departmentId])
+}
+
+model CourseOffering {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  courseId        String             @db.ObjectId
+  course          Course             @relation(fields: [courseId], references: [id])
+  academicSession String
+  semester        String
+  status          String             @default("ACTIVE")
+  tenantId        String             @db.ObjectId
+  tenant          Tenant             @relation(fields: [tenantId], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  assignments     CourseAssignment[]
+  enrollments     CourseEnrollment[]
+  grades          Grade[]
+
+  @@index([tenantId])
+  @@index([courseId])
+}
+
+enum AssignmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REMOVED
+}
+
+enum LecturerRole {
+  LEAD_LECTURER
+  CO_LECTURER
+  TA
+}
+
+model CourseAssignment {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  courseOfferingId String           @db.ObjectId
+  courseOffering   CourseOffering   @relation(fields: [courseOfferingId], references: [id])
+  lecturerId       String           @db.ObjectId
+  lecturer         User             @relation("LecturerAssignments", fields: [lecturerId], references: [id])
+  assignedById     String?          @db.ObjectId
+  assignedBy       User?            @relation("AssignedByHOD", fields: [assignedById], references: [id])
+  status           AssignmentStatus @default(PENDING)
+  role             LecturerRole     @default(LEAD_LECTURER)
+  tenantId         String           @db.ObjectId
+  tenant           Tenant           @relation(fields: [tenantId], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([tenantId])
+  @@index([courseOfferingId])
+  @@index([lecturerId])
+}
+
+enum EnrollmentStatus {
+  PENDING_APPROVAL
+  ENROLLED
+  REJECTED
+}
+
+model CourseEnrollment {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  studentId        String           @db.ObjectId
+  student          User             @relation(fields: [studentId], references: [id])
+  courseOfferingId String           @db.ObjectId
+  courseOffering   CourseOffering   @relation(fields: [courseOfferingId], references: [id])
+  status           EnrollmentStatus @default(PENDING_APPROVAL)
+  tenantId         String           @db.ObjectId
+  tenant           Tenant           @relation(fields: [tenantId], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([courseOfferingId])
+}
+
+model Grade {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  studentId        String         @db.ObjectId
+  student          User           @relation("StudentGrades", fields: [studentId], references: [id])
+  courseOfferingId String         @db.ObjectId
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  score            Float
+  gradedById       String         @db.ObjectId
+  gradedBy         User           @relation("GradedByLecturer", fields: [gradedById], references: [id])
+  tenantId         String         @db.ObjectId
+  tenant           Tenant         @relation(fields: [tenantId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([courseOfferingId])
 }
