@@ -8,6 +8,7 @@ import {
   verifySchoolAdmin,
   getTenants,
   getSchoolAdmins,
+  getAllSchoolAdmins,
 } from './superAdminService';
 
 export const onboardTenant = catchAsync(
@@ -85,3 +86,15 @@ export const handleGetSchoolAdmins = catchAsync(
     });
   },
 );
+
+export const handleGetAllSchoolAdmins = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await getAllSchoolAdmins();
+
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+

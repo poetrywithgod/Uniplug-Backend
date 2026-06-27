@@ -494,9 +494,7 @@ const swaggerSpec = {
                 type: 'object',
                 required: [
                   'schoolName',
-                  'schoolId',
                   'email',
-                  'school',
                   'address',
                   'postalCode',
                 ],
@@ -505,13 +503,16 @@ const swaggerSpec = {
                     type: 'string',
                     example: 'University of Lagos',
                   },
-                  schoolId: { type: 'string', example: 'UPH-009' },
                   email: {
                     type: 'string',
                     format: 'email',
                     example: 'info@unilag.edu.ng',
                   },
-                  school: { type: 'string', example: 'Unilag' },
+                  school: {
+                    type: 'string',
+                    description: 'Short school/display name (optional, derived from schoolName if omitted)',
+                    example: 'Unilag',
+                  },
                   address: {
                     type: 'string',
                     example: '1 University Road, Akoka',
@@ -546,6 +547,16 @@ const swaggerSpec = {
       },
     },
     '/super-admin/school-admins': {
+      get: {
+        tags: ['SuperAdmin'],
+        summary: 'List all school admins in the system',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: 'All school admins retrieved successfully',
+          },
+        },
+      },
       post: {
         tags: ['SuperAdmin'],
         summary: 'Create school admin account',
@@ -560,7 +571,6 @@ const swaggerSpec = {
                   'fullName',
                   'schoolId',
                   'email',
-                  'school',
                   'password',
                 ],
                 properties: {
@@ -571,7 +581,6 @@ const swaggerSpec = {
                     format: 'email',
                     example: 'demo@uniplug.com',
                   },
-                  school: { type: 'string', example: 'Uniport' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
