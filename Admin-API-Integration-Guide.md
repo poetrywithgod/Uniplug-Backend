@@ -151,13 +151,23 @@ A Super Admin can create the primary `SCHOOL_ADMIN` for a specific school. The b
 
 - **Endpoint**: `POST /api/v1/super-admin/school-admins`
 - **Headers**: `Authorization: Bearer <token>`
-- **Body**:
+- **Body Example 1 (Using Full School Name)**:
   ```json
   {
     "fullName": "Jane Doe",
-    "schoolId": "UPH-009",
+    "schoolId": "DEMO-UNI-01",
     "email": "jane@demouni.edu.ng",
-    "school": "University of Port Harcourt",
+    "school": "Demo University",
+    "password": "SecurePassword123!"
+  }
+  ```
+- **Body Example 2 (Using Short School Name / Abbreviation)**:
+  ```json
+  {
+    "fullName": "Jane Doe",
+    "schoolId": "DEMO-UNI-01",
+    "email": "jane@demouni.edu.ng",
+    "school": "Demo Uni",
     "password": "SecurePassword123!"
   }
   ```
