@@ -267,3 +267,41 @@ export const handleGetProgrammes = catchAsync(
   }
 );
 
+export const handleCreateProgrammeEnrollment = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const result = await courseService.createProgrammeEnrollment(req.body, user.tenantId);
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleGetStudentProgrammeEnrollments = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const studentId = Array.isArray(req.params.studentId)
+      ? req.params.studentId[0]
+      : (req.params.studentId as string);
+
+    // Enforce that only School Admin, HOD, or the student themselves can read
+    if (user.role === 'STUDENT' && user.id !== studentId) {
+      throw createError(403, 'You do not have permission to view other students enrollments.');
+    }
+
+    const result = await courseService.getStudentProgrammeEnrollments(studentId, user.tenantId);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+

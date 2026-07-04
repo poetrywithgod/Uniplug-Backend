@@ -47,6 +47,21 @@ router.get(
   controller.handleGetProgrammes
 );
 
+// --- Programme Enrollments ---
+router.post(
+  '/enrollments',
+  requireRole('SCHOOL_ADMIN', 'ADMISSION_OFFICER'),
+  validateRequest(schemas.createProgrammeEnrollmentSchema),
+  controller.handleCreateProgrammeEnrollment
+);
+router.get(
+  '/students/:studentId/enrollments',
+  requireRole('SCHOOL_ADMIN', 'HOD', 'STUDENT', 'ADMISSION_OFFICER'),
+  controller.handleGetStudentProgrammeEnrollments
+);
+
+
+
 
 
 // --- Courses ---
