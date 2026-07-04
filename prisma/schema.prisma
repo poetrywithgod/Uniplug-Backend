@@ -17,12 +17,16 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   SCHOOL_ADMIN
-  APPLICANT
-  STUDENT
-  PARENT
-  LECTURER
-  HOSTEL_ADMIN
+  ADMISSION_OFFICER
   HOD
+  LECTURER
+  EXAMINATION_OFFICER
+  FINANCE_OFFICER
+  HOSTEL_MANAGER
+  HOSTEL_STAFF
+  STUDENT
+  APPLICANT
+  PARENT
 }
 
 enum ApprovalStatus {
@@ -112,6 +116,11 @@ model Tenant {
   courseAssignments  CourseAssignment[]
   courseEnrollments  CourseEnrollment[]
   grades             Grade[]
+  faculties           Faculty[]
+  academicSessions    AcademicSession[]
+  academicSemesters   AcademicSemester[]
+  programmes          Programme[]
+  programmeEnrollments ProgrammeEnrollment[]
 }
 
 model User {
@@ -127,18 +136,17 @@ model User {
   schoolId            String?
   tenantId            String?             @db.ObjectId
   tenant              Tenant?             @relation(fields: [tenantId], references: [id])
-  passwordHash        String
   role                Role
   isVerified          Boolean             @default(false)
   approvalStatus      ApprovalStatus      @default(VERIFIED)
   approvalRemark      String?
-  emailOtpHash        String?
-  emailOtpExpiresAt   DateTime?
-  resetTokenHash      String?
-  resetTokenExpiresAt DateTime?
   level               Int?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
+  
+  // Decoupled credentials
+  credential          Credential?
+
   applications        Application[]
   hostelApplications  HostelApplication[]
   courseEnrollments   CourseEnrollment[]
@@ -147,6 +155,20 @@ model User {
   courseAssignments   CourseAssignment[]  @relation("LecturerAssignments")
   assignedByMe        CourseAssignment[]  @relation("AssignedByHOD")
   departmentsOwned    Department[]        @relation("DepartmentHOD")
+  programmeEnrollments ProgrammeEnrollment[]
+}
+
+model Credential {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String    @unique @db.ObjectId
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash        String
+  emailOtpHash        String?
+  emailOtpExpiresAt   DateTime?
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model Application {
@@ -230,17 +252,102 @@ model HostelApplication {
 }
 
 model Department {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  hodId     String?  @db.ObjectId
-  hod       User?    @relation("DepartmentHOD", fields: [hodId], references: [id])
-  tenantId  String   @db.ObjectId
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  hodId     String?     @db.ObjectId
+  hod       User?       @relation("DepartmentHOD", fields: [hodId], references: [id])
+  facultyId String?     @db.ObjectId
+  faculty   Faculty?    @relation(fields: [facultyId], references: [id])
+  tenantId  String      @db.ObjectId
+  tenant    Tenant      @relation(fields: [tenantId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   courses   Course[]
+  programmes Programme[]
 
   @@index([tenantId])
+  @@index([facultyId])
+}
+
+model Faculty {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  code        String       @unique
+  tenantId    String       @db.ObjectId
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  departments Department[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([tenantId])
+}
+
+model AcademicSession {
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  name         String             // e.g. "2025/2026"
+  isActive     Boolean            @default(false)
+  tenantId     String             @db.ObjectId
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
+  semesters    AcademicSemester[]
+  enrollments  ProgrammeEnrollment[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@unique([tenantId, name])
+}
+
+model AcademicSemester {
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
+  name      String          // e.g. "First Semester", "Second Semester"
+  isActive  Boolean         @default(false)
+  sessionId String          @db.ObjectId
+  session   AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tenantId  String          @db.ObjectId
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([sessionId, name])
+}
+
+model Programme {
+  id                String                @id @default(auto()) @map("_id") @db.ObjectId
+  name              String                // e.g. "BSc Computer Science"
+  code              String                @unique
+  durationYears     Int
+  creditRequirement Int
+  category          String                // Undergraduate Degree, ND, HND, NCE, etc.
+  departmentId      String                @db.ObjectId
+  department        Department            @relation(fields: [departmentId], references: [id])
+  tenantId          String                @db.ObjectId
+  tenant            Tenant                @relation(fields: [tenantId], references: [id])
+  enrollments       ProgrammeEnrollment[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([tenantId])
+  @@index([departmentId])
+}
+
+model ProgrammeEnrollment {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  studentId        String          @db.ObjectId
+  student          User            @relation(fields: [studentId], references: [id])
+  programmeId      String          @db.ObjectId
+  programme        Programme       @relation(fields: [programmeId], references: [id])
+  startSessionId   String          @db.ObjectId
+  startSession     AcademicSession @relation(fields: [startSessionId], references: [id])
+  entryLevel       String          // e.g. "100 Level", "ND I"
+  currentLevel     String          // e.g. "200 Level", "ND II"
+  admissionPathway String          // UTME, Direct Entry, Internal Progression, Conversion, Transfer
+  isActive         Boolean         @default(true)
+  tenantId         String          @db.ObjectId
+  tenant           Tenant          @relation(fields: [tenantId], references: [id])
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([tenantId])
+  @@index([studentId])
 }
 
 enum CourseCategory {
