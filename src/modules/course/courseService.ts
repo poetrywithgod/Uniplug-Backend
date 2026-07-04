@@ -508,3 +508,70 @@ export const getProgrammes = async (tenantId: string, departmentId?: string) => 
   return { programmes };
 };
 
+export const createProgrammeEnrollment = async (
+  payload: {
+    studentId: string;
+    programmeId: string;
+    startSessionId: string;
+    entryLevel: string;
+    currentLevel: string;
+    admissionPathway: string;
+  },
+  tenantId: string
+) => {
+  const student = await prisma.user.findFirst({
+    where: { id: payload.studentId, tenantId, role: 'STUDENT' },
+  });
+  if (!student) {
+    throw createError(404, 'Student user not found.');
+  }
+
+  const prog = await prisma.programme.findFirst({
+    where: { id: payload.programmeId, tenantId },
+  });
+  if (!prog) {
+    throw createError(404, 'Programme not found.');
+  }
+
+  const sess = await prisma.academicSession.findFirst({
+    where: { id: payload.startSessionId, tenantId },
+  });
+  if (!sess) {
+    throw createError(404, 'Academic session not found.');
+  }
+
+  const existing = await prisma.programmeEnrollment.findFirst({
+    where: { studentId: payload.studentId, programmeId: payload.programmeId, isActive: true },
+  });
+  if (existing) {
+    throw createError(409, 'Student is already actively enrolled in this programme.');
+  }
+
+  const enrollment = await prisma.programmeEnrollment.create({
+    data: {
+      studentId: payload.studentId,
+      programmeId: payload.programmeId,
+      startSessionId: payload.startSessionId,
+      entryLevel: payload.entryLevel,
+      currentLevel: payload.currentLevel,
+      admissionPathway: payload.admissionPathway,
+      tenantId,
+    },
+  });
+
+  return { enrollment };
+};
+
+export const getStudentProgrammeEnrollments = async (studentId: string, tenantId: string) => {
+  const enrollments = await prisma.programmeEnrollment.findMany({
+    where: { studentId, tenantId },
+    include: {
+      programme: { select: { id: true, name: true, code: true, category: true } },
+      startSession: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return { enrollments };
+};
+
+
