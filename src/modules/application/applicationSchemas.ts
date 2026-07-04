@@ -51,6 +51,7 @@ export const programmeSelectionSchema = z.object({
   faculty: z.string().min(2, 'Faculty is required'),
   course: z.string().min(2, 'Course/Programme is required'),
   studyMode: z.enum(['FULL_TIME', 'PART_TIME', 'DISTANCE_LEARNING']),
+  admissionPathway: z.enum(['UNDERGRADUATE', 'DIRECT_ENTRY', 'PART_TIME', 'POSTGRADUATE']),
 });
 
 export const documentSignatureSchema = z.object({
@@ -62,6 +63,8 @@ export const documentSignatureSchema = z.object({
     'JAMB_RESULT',
     'BIRTH_CERTIFICATE',
     'LGA_CERTIFICATE',
+    'CV',
+    'STATEMENT_OF_PURPOSE',
   ]),
   fileName: z.string().min(1, 'File name is required'),
 });
@@ -75,6 +78,9 @@ export const addDocumentSchema = z.object({
     'JAMB_RESULT',
     'BIRTH_CERTIFICATE',
     'LGA_CERTIFICATE',
+    'CV',
+    'STATEMENT_OF_PURPOSE',
   ]),
   fileUrl: z.string().url('Must be a valid Cloudinary URL'),
 });
+

@@ -50,3 +50,13 @@ export const submitGradesSchema = z.object({
     })
   ).min(1, 'At least one student grade is required'),
 });
+
+export const createProgrammeSchema = z.object({
+  name: z.string().min(3, 'Programme name must be at least 3 characters').max(100),
+  code: z.string().min(2, 'Programme code must be at least 2 characters').max(20),
+  durationYears: z.number().int().min(1).max(10),
+  creditRequirement: z.number().int().min(1).max(1000),
+  category: z.string().min(2, 'Category is required').max(100),
+  departmentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Department ID format'),
+});
+

@@ -318,15 +318,47 @@ export const submitApplication = async (
     throw createError(400, 'Programme selection section is incomplete.');
   }
 
-  // NOTE: Depending on requirements, validate documents array length
-  // e.g. application.documents.length === 0 needs to be avoided
-  // Let's enforce at least 1 document for submission based on design step 4
-  if (!application.documents || application.documents.length === 0) {
-    throw createError(
-      400,
-      'At least one document upload is required before submission.',
-    );
+  const pathway = application.programmeSelection.admissionPathway;
+  const docs = application.documents || [];
+  const uploadedTypes = docs.map((d) => d.documentType);
+
+  if (pathway === 'UNDERGRADUATE') {
+    const required = ['JAMB_RESULT', 'BIRTH_CERTIFICATE', 'LGA_CERTIFICATE', 'PASSPORT_PHOTOGRAPH'];
+    for (const reqType of required) {
+      if (!uploadedTypes.includes(reqType as any)) {
+        throw createError(400, `Missing required document for Undergraduate regular pathway: ${reqType}`);
+      }
+    }
+  } else if (pathway === 'DIRECT_ENTRY') {
+    const required = ['TRANSCRIPT', 'CERTIFICATE', 'BIRTH_CERTIFICATE', 'LGA_CERTIFICATE', 'PASSPORT_PHOTOGRAPH'];
+    for (const reqType of required) {
+      if (!uploadedTypes.includes(reqType as any)) {
+        throw createError(400, `Missing required document for Direct Entry pathway: ${reqType}`);
+      }
+    }
+  } else if (pathway === 'PART_TIME') {
+    const required = ['BIRTH_CERTIFICATE', 'LGA_CERTIFICATE', 'PASSPORT_PHOTOGRAPH'];
+    for (const reqType of required) {
+      if (!uploadedTypes.includes(reqType as any)) {
+        throw createError(400, `Missing required document for Part-Time pathway: ${reqType}`);
+      }
+    }
+  } else if (pathway === 'POSTGRADUATE') {
+    const required = ['TRANSCRIPT', 'CERTIFICATE', 'CV', 'STATEMENT_OF_PURPOSE', 'PASSPORT_PHOTOGRAPH'];
+    for (const reqType of required) {
+      if (!uploadedTypes.includes(reqType as any)) {
+        throw createError(400, `Missing required document for Postgraduate pathway: ${reqType}`);
+      }
+    }
+  } else {
+    if (docs.length === 0) {
+      throw createError(
+        400,
+        'At least one document upload is required before submission.',
+      );
+    }
   }
+
 
   const updatedApplication = await prisma.application.update({
     where: { id: applicationId },

@@ -454,3 +454,57 @@ export const submitGrades = async (
 
   return { grades: results };
 };
+
+export const createProgramme = async (
+  payload: {
+    name: string;
+    code: string;
+    durationYears: number;
+    creditRequirement: number;
+    category: string;
+    departmentId: string;
+  },
+  tenantId: string
+) => {
+  const dept = await prisma.department.findFirst({
+    where: { id: payload.departmentId, tenantId },
+  });
+  if (!dept) {
+    throw createError(404, 'Department not found in this school.');
+  }
+
+  const existing = await prisma.programme.findUnique({
+    where: { code: payload.code },
+  });
+  if (existing) {
+    throw createError(409, `Programme with code ${payload.code} already exists.`);
+  }
+
+  const programme = await prisma.programme.create({
+    data: {
+      name: payload.name,
+      code: payload.code,
+      durationYears: payload.durationYears,
+      creditRequirement: payload.creditRequirement,
+      category: payload.category,
+      departmentId: payload.departmentId,
+      tenantId,
+    },
+  });
+
+  return { programme };
+};
+
+export const getProgrammes = async (tenantId: string, departmentId?: string) => {
+  const filter: any = { tenantId };
+  if (departmentId) {
+    filter.departmentId = departmentId;
+  }
+  const programmes = await prisma.programme.findMany({
+    where: filter,
+    include: { department: { select: { id: true, name: true } } },
+    orderBy: { name: 'asc' },
+  });
+  return { programmes };
+};
+

@@ -65,7 +65,10 @@ enum DocumentType {
   JAMB_RESULT
   BIRTH_CERTIFICATE
   LGA_CERTIFICATE
+  CV
+  STATEMENT_OF_PURPOSE
 }
+
 
 type PersonalDetails {
   firstName   String
@@ -84,10 +87,12 @@ type AcademicRecord {
 }
 
 type ProgrammeSelection {
-  faculty   String
-  course    String
-  studyMode StudyMode
+  faculty          String
+  course           String
+  studyMode        StudyMode
+  admissionPathway String?
 }
+
 
 type UploadedDocument {
   documentType DocumentType

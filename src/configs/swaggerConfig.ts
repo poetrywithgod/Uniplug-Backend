@@ -1249,6 +1249,60 @@ const swaggerSpec = {
       },
     },
 
+    '/programmes': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Create a new academic programme (SCHOOL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name', 'code', 'durationYears', 'creditRequirement', 'category', 'departmentId'],
+                properties: {
+                  name: { type: 'string', example: 'BSc Computer Science' },
+                  code: { type: 'string', example: 'BSC-CS' },
+                  durationYears: { type: 'number', example: 4 },
+                  creditRequirement: { type: 'number', example: 120 },
+                  category: { type: 'string', example: 'Undergraduate Degree' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427b' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Programme created successfully' },
+        },
+      },
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get all programmes in the school',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'schoolId',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Optionally query by schoolId (e.g. for guest applicants)',
+          },
+          {
+            name: 'departmentId',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Filter programmes by department',
+          },
+        ],
+        responses: {
+          200: { description: 'Programmes retrieved successfully' },
+        },
+      },
+    },
+
     '/courses': {
       post: {
         tags: ['CourseManagement'],

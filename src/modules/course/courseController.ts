@@ -235,3 +235,35 @@ export const handleSubmitGrades = catchAsync(
     });
   }
 );
+
+export const handleCreateProgramme = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const result = await courseService.createProgramme(req.body, user.tenantId);
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleGetProgrammes = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    // Permit reading programmes even if tenantId is fetched from query for applicants
+    const tenantId = user?.tenantId || (req.query.schoolId as string);
+    if (!tenantId) {
+      throw createError(400, 'Tenant context or schoolId is missing.');
+    }
+    const departmentId = req.query.departmentId as string | undefined;
+    const result = await courseService.getProgrammes(tenantId, departmentId);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+

@@ -34,6 +34,20 @@ router.get(
   controller.handleGetFaculties
 );
 
+// --- Programmes ---
+router.post(
+  '/programmes',
+  requireRole('SCHOOL_ADMIN'),
+  validateRequest(schemas.createProgrammeSchema),
+  controller.handleCreateProgramme
+);
+router.get(
+  '/programmes',
+  requireRole('SCHOOL_ADMIN', 'HOD', 'APPLICANT', 'STUDENT'),
+  controller.handleGetProgrammes
+);
+
+
 
 // --- Courses ---
 router.post(
