@@ -7,12 +7,16 @@ import { verifyAccessToken } from '../modules/auth/authSecurity';
 type AllowedRole =
   | 'SUPER_ADMIN'
   | 'SCHOOL_ADMIN'
-  | 'APPLICANT'
-  | 'STUDENT'
-  | 'PARENT'
+  | 'ADMISSION_OFFICER'
+  | 'HOD'
   | 'LECTURER'
-  | 'HOSTEL_ADMIN'
-  | 'HOD';
+  | 'EXAMINATION_OFFICER'
+  | 'FINANCE_OFFICER'
+  | 'HOSTEL_MANAGER'
+  | 'HOSTEL_STAFF'
+  | 'STUDENT'
+  | 'APPLICANT'
+  | 'PARENT';
 
 const getBearerToken = (authHeader?: string): string | null => {
   if (!authHeader) {
@@ -63,8 +67,9 @@ export const requireAuth = async (
     const requiresApproval =
       user.role === 'SCHOOL_ADMIN' ||
       user.role === 'LECTURER' ||
-      user.role === 'HOSTEL_ADMIN' ||
+      user.role === 'HOSTEL_MANAGER' ||
       user.role === 'HOD';
+
 
     if (requiresApproval && user.approvalStatus !== 'VERIFIED') {
       return next(
