@@ -849,6 +849,108 @@ const swaggerSpec = {
         },
       },
     },
+    '/admin/sessions': {
+      post: {
+        tags: ['SchoolAdmin'],
+        summary: 'Create a new academic session',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                  name: { type: 'string', example: '2025/2026' },
+                  isActive: { type: 'boolean', example: false },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Session created successfully' },
+        },
+      },
+      get: {
+        tags: ['SchoolAdmin'],
+        summary: 'Get all academic sessions and semesters for the tenant',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Sessions list retrieved successfully' },
+        },
+      },
+    },
+    '/admin/sessions/{id}/activate': {
+      patch: {
+        tags: ['SchoolAdmin'],
+        summary: 'Activate an academic session',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          200: { description: 'Session activated successfully' },
+        },
+      },
+    },
+    '/admin/sessions/{sessionId}/semesters': {
+      post: {
+        tags: ['SchoolAdmin'],
+        summary: 'Create a new semester under a session',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'sessionId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                  name: { type: 'string', example: 'First Semester' },
+                  isActive: { type: 'boolean', example: false },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Semester created successfully' },
+        },
+      },
+    },
+    '/admin/semesters/{id}/activate': {
+      patch: {
+        tags: ['SchoolAdmin'],
+        summary: 'Activate a semester under its session',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          200: { description: 'Semester activated successfully' },
+        },
+      },
+    },
     '/meta/departments': {
       get: {
         tags: ['Meta'],
@@ -1094,6 +1196,7 @@ const swaggerSpec = {
                 properties: {
                   name: { type: 'string', example: 'Computer Science' },
                   hodId: { type: 'string', example: '60d5ec4b868e5a2b3479427b', description: 'User ID of HOD (must have HOD role)' },
+                  facultyId: { type: 'string', example: '60d5ec4b868e5a2b3479427a', description: 'Faculty ID department belongs to' },
                 },
               },
             },
@@ -1112,6 +1215,40 @@ const swaggerSpec = {
         },
       },
     },
+    '/faculties': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Create a new faculty (SCHOOL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name', 'code'],
+                properties: {
+                  name: { type: 'string', example: 'Faculty of Science' },
+                  code: { type: 'string', example: 'FSC' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Faculty created successfully' },
+        },
+      },
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get all faculties in the school (SCHOOL_ADMIN or HOD)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Faculties retrieved successfully' },
+        },
+      },
+    },
+
     '/courses': {
       post: {
         tags: ['CourseManagement'],

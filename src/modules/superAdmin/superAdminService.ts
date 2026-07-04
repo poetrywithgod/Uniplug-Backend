@@ -165,7 +165,6 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
           data: {
             firstName,
             lastName,
-            passwordHash,
             role: 'SCHOOL_ADMIN',
             adminId,
             school: tenant.schoolName,
@@ -174,8 +173,20 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
             isVerified: false,
             approvalStatus: 'VERIFIED',
             approvalRemark: null,
-            emailOtpHash: hashOtpCode(otpCode),
-            emailOtpExpiresAt: getOtpExpiryDate(),
+            credential: {
+              upsert: {
+                create: {
+                  passwordHash,
+                  emailOtpHash: hashOtpCode(otpCode),
+                  emailOtpExpiresAt: getOtpExpiryDate(),
+                },
+                update: {
+                  passwordHash,
+                  emailOtpHash: hashOtpCode(otpCode),
+                  emailOtpExpiresAt: getOtpExpiryDate(),
+                },
+              },
+            },
           },
           select: {
             firstName: true,
@@ -198,7 +209,6 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
               firstName,
               lastName,
               email: payload.email,
-              passwordHash,
               role: 'SCHOOL_ADMIN',
               adminId,
               school: tenant.schoolName,
@@ -206,8 +216,13 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
               tenantId: tenant.id,
               isVerified: false,
               approvalStatus: 'VERIFIED',
-              emailOtpHash: hashOtpCode(otpCode),
-              emailOtpExpiresAt: getOtpExpiryDate(),
+              credential: {
+                create: {
+                  passwordHash,
+                  emailOtpHash: hashOtpCode(otpCode),
+                  emailOtpExpiresAt: getOtpExpiryDate(),
+                },
+              },
             },
             select: {
               firstName: true,
@@ -218,6 +233,7 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
               school: true,
               schoolId: true,
               isVerified: true,
+
               approvalStatus: true,
             },
           });

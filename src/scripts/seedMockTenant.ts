@@ -31,13 +31,17 @@ async function main() {
       lastName: 'Admin',
       email: adminEmail,
       phoneNumber: '08012345678',
-      passwordHash: hashedPassword,
       role: Role.SCHOOL_ADMIN,
       isVerified: true,
       approvalStatus: 'VERIFIED',
       schoolId: tenant.schoolId,
       school: tenant.schoolName,
       tenantId: tenant.id,
+      credential: {
+        create: {
+          passwordHash: hashedPassword,
+        },
+      },
     },
   });
 

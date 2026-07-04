@@ -31,6 +31,35 @@ export const handleGetDepartments = catchAsync(
   }
 );
 
+export const handleCreateFaculty = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const result = await courseService.createFaculty(req.body, user.tenantId);
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleGetFaculties = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const result = await courseService.getFaculties(user.tenantId);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+
 export const handleCreateCourse = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;

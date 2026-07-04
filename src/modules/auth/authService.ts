@@ -95,18 +95,29 @@ export const registerUser = async (payload: RegisterBody) => {
 
   const role = roleMap[roleInput];
 
-  const user = existingUser
+const user = existingUser
     ? await prisma.user.update({
         where: { email },
         data: {
           firstName,
           lastName,
           phoneNumber,
-          passwordHash,
           role,
           isVerified: false,
-          emailOtpHash,
-          emailOtpExpiresAt,
+          credential: {
+            upsert: {
+              create: {
+                passwordHash,
+                emailOtpHash,
+                emailOtpExpiresAt,
+              },
+              update: {
+                passwordHash,
+                emailOtpHash,
+                emailOtpExpiresAt,
+              },
+            },
+          },
         },
       })
     : await prisma.user.create({
@@ -115,11 +126,15 @@ export const registerUser = async (payload: RegisterBody) => {
           lastName,
           email,
           phoneNumber,
-          passwordHash,
           role,
           isVerified: false,
-          emailOtpHash,
-          emailOtpExpiresAt,
+          credential: {
+            create: {
+              passwordHash,
+              emailOtpHash,
+              emailOtpExpiresAt,
+            },
+          },
         },
       });
 
@@ -134,7 +149,10 @@ export const registerUser = async (payload: RegisterBody) => {
 
 export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
   const email = normalizeEmail(payload.email);
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { credential: true },
+  });
 
   if (!user) {
     throw createError(404, 'User not found.');
@@ -153,14 +171,14 @@ export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
     };
   }
 
-  if (!user.emailOtpHash || !user.emailOtpExpiresAt) {
+  if (!user.credential?.emailOtpHash || !user.credential?.emailOtpExpiresAt) {
     throw createError(400, 'No active OTP found. Please request a new code.');
   }
 
   const otpHash = hashOtpCode(payload.otpCode);
-  const isExpired = user.emailOtpExpiresAt.getTime() < Date.now();
+  const isExpired = user.credential.emailOtpExpiresAt.getTime() < Date.now();
 
-  if (isExpired || otpHash !== user.emailOtpHash) {
+  if (isExpired || otpHash !== user.credential.emailOtpHash) {
     throw createError(400, 'Invalid or expired OTP code.');
   }
 
@@ -168,8 +186,12 @@ export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
     where: { email },
     data: {
       isVerified: true,
-      emailOtpHash: null,
-      emailOtpExpiresAt: null,
+      credential: {
+        update: {
+          emailOtpHash: null,
+          emailOtpExpiresAt: null,
+        },
+      },
     },
   });
 
@@ -203,8 +225,12 @@ export const resendRegistrationOtp = async (payload: ResendOtpBody) => {
   await prisma.user.update({
     where: { email },
     data: {
-      emailOtpHash: hashOtpCode(otpCode),
-      emailOtpExpiresAt: getOtpExpiryDate(),
+      credential: {
+        update: {
+          emailOtpHash: hashOtpCode(otpCode),
+          emailOtpExpiresAt: getOtpExpiryDate(),
+        },
+      },
     },
   });
 
@@ -225,15 +251,16 @@ export const loginUser = async (payload: LoginBody) => {
         { adminId: payload.email }, // Using original payload.email in case normalizeEmail mutates ID layout
       ],
     },
+    include: { credential: true },
   });
 
-  if (!user) {
+  if (!user || !user.credential) {
     throw createError(401, 'Invalid email or password.');
   }
 
   const isPasswordValid = await comparePassword(
     payload.password,
-    user.passwordHash,
+    user.credential.passwordHash,
   );
 
   if (!isPasswordValid) {
@@ -250,7 +277,7 @@ export const loginUser = async (payload: LoginBody) => {
   const approvalRequiredRoles: Role[] = [
     Role.SCHOOL_ADMIN,
     Role.LECTURER,
-    Role.HOSTEL_ADMIN,
+    Role.HOSTEL_MANAGER,
   ];
 
   if (
@@ -298,8 +325,12 @@ export const forgotPassword = async (payload: ForgotPasswordBody) => {
   await prisma.user.update({
     where: { email },
     data: {
-      resetTokenHash,
-      resetTokenExpiresAt: getResetTokenExpiryDate(),
+      credential: {
+        update: {
+          resetTokenHash,
+          resetTokenExpiresAt: getResetTokenExpiryDate(),
+        },
+      },
     },
   });
 
@@ -315,14 +346,19 @@ export const resetPassword = async (payload: ResetPasswordBody) => {
   const tokenHash = hashResetToken(payload.token);
 
   const user = await prisma.user.findFirst({
-    where: { resetTokenHash: tokenHash },
+    where: {
+      credential: {
+        resetTokenHash: tokenHash,
+      },
+    },
+    include: { credential: true },
   });
 
-  if (!user || !user.resetTokenExpiresAt) {
+  if (!user || !user.credential || !user.credential.resetTokenExpiresAt) {
     throw createError(400, 'Invalid or expired reset link.');
   }
 
-  const isExpired = user.resetTokenExpiresAt.getTime() < Date.now();
+  const isExpired = user.credential.resetTokenExpiresAt.getTime() < Date.now();
 
   if (isExpired) {
     throw createError(400, 'Invalid or expired reset link.');
@@ -333,9 +369,13 @@ export const resetPassword = async (payload: ResetPasswordBody) => {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      passwordHash,
-      resetTokenHash: null,
-      resetTokenExpiresAt: null,
+      credential: {
+        update: {
+          passwordHash,
+          resetTokenHash: null,
+          resetTokenExpiresAt: null,
+        },
+      },
     },
   });
 
@@ -344,3 +384,4 @@ export const resetPassword = async (payload: ResetPasswordBody) => {
       'Password reset successful. You can now log in with your new password.',
   };
 };
+

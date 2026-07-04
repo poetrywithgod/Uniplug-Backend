@@ -21,6 +21,20 @@ router.get(
   controller.handleGetDepartments
 );
 
+// --- Faculties ---
+router.post(
+  '/faculties',
+  requireRole('SCHOOL_ADMIN'),
+  validateRequest(schemas.createFacultySchema),
+  controller.handleCreateFaculty
+);
+router.get(
+  '/faculties',
+  requireRole('SCHOOL_ADMIN', 'HOD'),
+  controller.handleGetFaculties
+);
+
+
 // --- Courses ---
 router.post(
   '/courses',

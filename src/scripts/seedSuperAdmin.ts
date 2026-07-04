@@ -17,10 +17,14 @@ async function seedSuperAdmin() {
       email: superAdminEmail,
       adminId: 'UNI-SUPER-ADMIN-01',
       phoneNumber: '08000000000',
-      passwordHash: hashedPassword,
       role: 'SUPER_ADMIN',
       isVerified: true,
       approvalStatus: 'VERIFIED',
+      credential: {
+        create: {
+          passwordHash: hashedPassword,
+        },
+      },
     },
   });
 

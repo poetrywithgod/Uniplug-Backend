@@ -7,6 +7,11 @@ import {
   handleUpdateApplicationStatus,
   onboardHostelAdmin,
   onboardLecturer,
+  handleCreateSession,
+  handleActivateSession,
+  handleCreateSemester,
+  handleActivateSemester,
+  handleGetSessions,
 } from './adminController';
 import { requireAuth, requireRole } from '../../middlewares/authMiddleware';
 import { validateRequest, validateQuery } from '../../utils/validation';
@@ -16,6 +21,8 @@ import {
   getApplicationsQuerySchema,
   reviewStaffSchema,
   updateApplicationStatusSchema,
+  createSessionSchema,
+  createSemesterSchema,
 } from './adminSchemas';
 
 const router = express.Router();
@@ -50,5 +57,21 @@ router.patch(
   validateRequest(updateApplicationStatusSchema),
   handleUpdateApplicationStatus,
 );
+
+// Academic Session & Semester Management
+router.post(
+  '/sessions',
+  validateRequest(createSessionSchema),
+  handleCreateSession,
+);
+router.get('/sessions', handleGetSessions);
+router.patch('/sessions/:id/activate', handleActivateSession);
+router.post(
+  '/sessions/:sessionId/semesters',
+  validateRequest(createSemesterSchema),
+  handleCreateSemester,
+);
+router.patch('/semesters/:id/activate', handleActivateSemester);
+
 
 export default router;

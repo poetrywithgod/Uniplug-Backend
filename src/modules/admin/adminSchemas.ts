@@ -74,3 +74,16 @@ export const updateApplicationStatusSchema = z
       path: ['rejectionReason'],
     },
   );
+
+export const createSessionSchema = z.object({
+  name: z
+    .string()
+    .regex(/^\d{4}\/\d{4}$/, 'Session name must be in YYYY/YYYY format (e.g. 2025/2026)'),
+  isActive: z.boolean().optional().default(false),
+});
+
+export const createSemesterSchema = z.object({
+  name: z.string().min(3, 'Semester name must be at least 3 characters'),
+  isActive: z.boolean().optional().default(false),
+});
+

@@ -38,7 +38,7 @@ const splitFullName = (
 
 const createStaffAccount = async (
   payload: CreateStaffPayload,
-  role: 'LECTURER' | 'HOSTEL_ADMIN',
+  role: 'LECTURER' | 'HOSTEL_MANAGER',
   actor: ActorContext,
 ) => {
   if (!actor.tenantId || !actor.schoolId || !actor.school) {
@@ -86,7 +86,6 @@ const createStaffAccount = async (
         data: {
           firstName,
           lastName,
-          passwordHash,
           adminId,
           staffId: payload.staffId,
           department: payload.department,
@@ -97,8 +96,20 @@ const createStaffAccount = async (
           approvalStatus: 'VERIFIED',
           approvalRemark: null,
           isVerified: false,
-          emailOtpHash: hashOtpCode(otpCode),
-          emailOtpExpiresAt: getOtpExpiryDate(),
+          credential: {
+            upsert: {
+              create: {
+                passwordHash,
+                emailOtpHash: hashOtpCode(otpCode),
+                emailOtpExpiresAt: getOtpExpiryDate(),
+              },
+              update: {
+                passwordHash,
+                emailOtpHash: hashOtpCode(otpCode),
+                emailOtpExpiresAt: getOtpExpiryDate(),
+              },
+            },
+          },
         },
         select: {
           firstName: true,
@@ -126,12 +137,16 @@ const createStaffAccount = async (
           schoolId: actor.schoolId,
           school: actor.school,
           tenantId: actor.tenantId,
-          passwordHash,
           role,
           isVerified: false,
           approvalStatus: 'VERIFIED',
-          emailOtpHash: hashOtpCode(otpCode),
-          emailOtpExpiresAt: getOtpExpiryDate(),
+          credential: {
+            create: {
+              passwordHash,
+              emailOtpHash: hashOtpCode(otpCode),
+              emailOtpExpiresAt: getOtpExpiryDate(),
+            },
+          },
         },
         select: {
           firstName: true,
@@ -162,7 +177,7 @@ const createStaffAccount = async (
   });
 
   return {
-    message: `${role === 'LECTURER' ? 'Lecturer' : 'Hostel admin'} account created and approved successfully. OTP and login details sent by email.`,
+    message: `${role === 'LECTURER' ? 'Lecturer' : 'Hostel manager'} account created and approved successfully. OTP and login details sent by email.`,
     user,
   };
 };
@@ -178,7 +193,7 @@ export const createHostelAdmin = async (
   payload: CreateStaffPayload,
   actor: ActorContext,
 ) => {
-  return createStaffAccount(payload, 'HOSTEL_ADMIN', actor);
+  return createStaffAccount(payload, 'HOSTEL_MANAGER', actor);
 };
 
 export const verifyStaffAccount = async (
@@ -187,7 +202,7 @@ export const verifyStaffAccount = async (
 ) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
 
-  if (!user || (user.role !== 'LECTURER' && user.role !== 'HOSTEL_ADMIN')) {
+  if (!user || (user.role !== 'LECTURER' && user.role !== 'HOSTEL_MANAGER')) {
     throw createError(404, 'Staff account not found.');
   }
 
@@ -226,7 +241,7 @@ export const rejectStaffAccount = async (
 ) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
 
-  if (!user || (user.role !== 'LECTURER' && user.role !== 'HOSTEL_ADMIN')) {
+  if (!user || (user.role !== 'LECTURER' && user.role !== 'HOSTEL_MANAGER')) {
     throw createError(404, 'Staff account not found.');
   }
 
@@ -424,3 +439,162 @@ export const updateApplicationStatus = async (
     data: updatedApplication,
   };
 };
+
+export const createSession = async (
+  payload: { name: string; isActive?: boolean },
+  actor: ActorContext,
+) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'School admin account is not linked to a tenant.');
+  }
+
+  const existing = await prisma.academicSession.findFirst({
+    where: { tenantId: actor.tenantId, name: payload.name },
+  });
+
+  if (existing) {
+    throw createError(409, 'Academic session with this name already exists.');
+  }
+
+  if (payload.isActive) {
+    await prisma.academicSession.updateMany({
+      where: { tenantId: actor.tenantId },
+      data: { isActive: false },
+    });
+  }
+
+  const session = await prisma.academicSession.create({
+    data: {
+      name: payload.name,
+      isActive: !!payload.isActive,
+      tenantId: actor.tenantId,
+    },
+  });
+
+  return {
+    message: 'Academic session created successfully.',
+    session,
+  };
+};
+
+export const activateSession = async (sessionId: string, actor: ActorContext) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'School admin account is not linked to a tenant.');
+  }
+
+  const session = await prisma.academicSession.findFirst({
+    where: { id: sessionId, tenantId: actor.tenantId },
+  });
+
+  if (!session) {
+    throw createError(404, 'Academic session not found.');
+  }
+
+  await prisma.academicSession.updateMany({
+    where: { tenantId: actor.tenantId },
+    data: { isActive: false },
+  });
+
+  const updated = await prisma.academicSession.update({
+    where: { id: sessionId },
+    data: { isActive: true },
+  });
+
+  return {
+    message: 'Academic session activated successfully.',
+    session: updated,
+  };
+};
+
+export const createSemester = async (
+  sessionId: string,
+  payload: { name: string; isActive?: boolean },
+  actor: ActorContext,
+) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'School admin account is not linked to a tenant.');
+  }
+
+  const session = await prisma.academicSession.findFirst({
+    where: { id: sessionId, tenantId: actor.tenantId },
+  });
+
+  if (!session) {
+    throw createError(404, 'Academic session not found.');
+  }
+
+  const existing = await prisma.academicSemester.findFirst({
+    where: { sessionId, name: payload.name },
+  });
+
+  if (existing) {
+    throw createError(409, 'Academic semester with this name already exists under this session.');
+  }
+
+  if (payload.isActive) {
+    await prisma.academicSemester.updateMany({
+      where: { sessionId },
+      data: { isActive: false },
+    });
+  }
+
+  const semester = await prisma.academicSemester.create({
+    data: {
+      name: payload.name,
+      isActive: !!payload.isActive,
+      sessionId,
+      tenantId: actor.tenantId,
+    },
+  });
+
+  return {
+    message: 'Academic semester created successfully.',
+    semester,
+  };
+};
+
+export const activateSemester = async (semesterId: string, actor: ActorContext) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'School admin account is not linked to a tenant.');
+  }
+
+  const semester = await prisma.academicSemester.findFirst({
+    where: { id: semesterId, tenantId: actor.tenantId },
+  });
+
+  if (!semester) {
+    throw createError(404, 'Academic semester not found.');
+  }
+
+  await prisma.academicSemester.updateMany({
+    where: { sessionId: semester.sessionId },
+    data: { isActive: false },
+  });
+
+  const updated = await prisma.academicSemester.update({
+    where: { id: semesterId },
+    data: { isActive: true },
+  });
+
+  return {
+    message: 'Academic semester activated successfully.',
+    semester: updated,
+  };
+};
+
+export const getSessions = async (actor: ActorContext) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'School admin account is not linked to a tenant.');
+  }
+
+  const sessions = await prisma.academicSession.findMany({
+    where: { tenantId: actor.tenantId },
+    include: { semesters: true },
+    orderBy: { name: 'desc' },
+  });
+
+  return {
+    sessions,
+  };
+};
+

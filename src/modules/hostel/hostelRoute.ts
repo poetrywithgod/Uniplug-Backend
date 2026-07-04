@@ -25,8 +25,8 @@ router.post(
   hostelController.applyForHostel,
 );
 
-// Routes for HOSTEL_ADMIN
-router.use(requireAuth, requireRole('HOSTEL_ADMIN'));
+// Routes for HOSTEL_MANAGER
+router.use(requireAuth, requireRole('HOSTEL_MANAGER'));
 
 router.post(
   '/',

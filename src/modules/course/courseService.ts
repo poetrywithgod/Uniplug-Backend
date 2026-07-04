@@ -4,7 +4,7 @@ import { CourseCategory, AssignmentStatus, LecturerRole, EnrollmentStatus } from
 
 // --- Departments ---
 export const createDepartment = async (
-  payload: { name: string; hodId?: string },
+  payload: { name: string; hodId?: string; facultyId?: string },
   tenantId: string
 ) => {
   if (payload.hodId) {
@@ -16,10 +16,20 @@ export const createDepartment = async (
     }
   }
 
+  if (payload.facultyId) {
+    const faculty = await prisma.faculty.findFirst({
+      where: { id: payload.facultyId, tenantId },
+    });
+    if (!faculty) {
+      throw createError(404, 'Faculty not found under this tenant.');
+    }
+  }
+
   const department = await prisma.department.create({
     data: {
       name: payload.name,
       hodId: payload.hodId,
+      facultyId: payload.facultyId,
       tenantId,
     },
   });
@@ -30,10 +40,53 @@ export const createDepartment = async (
 export const getDepartments = async (tenantId: string) => {
   const departments = await prisma.department.findMany({
     where: { tenantId },
-    include: { hod: { select: { id: true, firstName: true, lastName: true, email: true } } },
+    include: {
+      hod: { select: { id: true, firstName: true, lastName: true, email: true } },
+      faculty: { select: { id: true, name: true, code: true } },
+    },
   });
   return { departments };
 };
+
+// --- Faculties ---
+export const createFaculty = async (
+  payload: { name: string; code: string },
+  tenantId: string
+) => {
+  const existing = await prisma.faculty.findFirst({
+    where: {
+      tenantId,
+      OR: [
+        { name: payload.name },
+        { code: payload.code },
+      ],
+    },
+  });
+
+  if (existing) {
+    throw createError(409, 'Faculty with this name or code already exists.');
+  }
+
+  const faculty = await prisma.faculty.create({
+    data: {
+      name: payload.name,
+      code: payload.code,
+      tenantId,
+    },
+  });
+
+  return { faculty };
+};
+
+export const getFaculties = async (tenantId: string) => {
+  const faculties = await prisma.faculty.findMany({
+    where: { tenantId },
+    include: { departments: true },
+    orderBy: { name: 'asc' },
+  });
+  return { faculties };
+};
+
 
 // --- Courses ---
 export const createCourse = async (

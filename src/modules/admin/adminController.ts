@@ -8,6 +8,12 @@ import {
   rejectStaffAccount,
   updateApplicationStatus,
   verifyStaffAccount,
+  createSession,
+  activateSession,
+  createSemester,
+  activateSemester,
+  getSessions,
+
 } from './adminService';
 
 export const onboardLecturer = catchAsync(
@@ -95,3 +101,68 @@ export const handleUpdateApplicationStatus = catchAsync(
     });
   },
 );
+
+export const handleCreateSession = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await createSession(req.body, res.locals.user);
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const handleActivateSession = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const id = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
+    const result = await activateSession(id, res.locals.user);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const handleCreateSemester = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const sessionId = Array.isArray(req.params.sessionId)
+      ? req.params.sessionId[0]
+      : req.params.sessionId;
+    const result = await createSemester(
+      sessionId,
+      req.body,
+      res.locals.user,
+    );
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const handleActivateSemester = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const id = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
+    const result = await activateSemester(id, res.locals.user);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+
+export const handleGetSessions = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await getSessions(res.locals.user);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+

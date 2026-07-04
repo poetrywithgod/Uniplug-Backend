@@ -3,7 +3,14 @@ import { z } from 'zod';
 export const createDepartmentSchema = z.object({
   name: z.string().min(2, 'Department name must be at least 2 characters').max(100),
   hodId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid HOD User ID format').optional(),
+  facultyId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Faculty ID format').optional(),
 });
+
+export const createFacultySchema = z.object({
+  name: z.string().min(3, 'Faculty name must be at least 3 characters').max(100),
+  code: z.string().min(2, 'Faculty code must be at least 2 characters').max(20),
+});
+
 
 export const createCourseSchema = z.object({
   courseName: z.string().min(2, 'Course name must be at least 2 characters').max(120),

@@ -453,7 +453,7 @@ export const sendStaffOnboardingEmail = async (payload: {
   name: string;
   email: string;
   password: string;
-  role: 'LECTURER' | 'HOSTEL_ADMIN';
+  role: 'LECTURER' | 'HOSTEL_MANAGER';
   adminId: string;
   schoolId: string;
   school: string;
@@ -470,7 +470,7 @@ export const sendStaffOnboardingEmail = async (payload: {
   const safePassword = escapeHtml(payload.password);
   const safeSchoolId = escapeHtml(payload.schoolId);
   const safeSchool = escapeHtml(payload.school);
-  const roleLabel = payload.role === 'LECTURER' ? 'Lecturer' : 'Hostel Admin';
+  const roleLabel = payload.role === 'LECTURER' ? 'Lecturer' : 'Hostel Manager';
 
   const mailOptions = {
     from: `Uniplug Team <${EMAIL_USERNAME}>`,
