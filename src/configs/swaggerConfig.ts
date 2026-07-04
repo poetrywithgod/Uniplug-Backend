@@ -1303,6 +1303,55 @@ const swaggerSpec = {
       },
     },
 
+    '/enrollments': {
+      post: {
+        tags: ['CourseManagement'],
+        summary: 'Enroll a student in an academic programme (SCHOOL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['studentId', 'programmeId', 'startSessionId', 'entryLevel', 'currentLevel', 'admissionPathway'],
+                properties: {
+                  studentId: { type: 'string', example: '60d5ec4b868e5a2b3479427b' },
+                  programmeId: { type: 'string', example: '60d5ec4b868e5a2b3479427c' },
+                  startSessionId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
+                  entryLevel: { type: 'string', example: '100 Level' },
+                  currentLevel: { type: 'string', example: '100 Level' },
+                  admissionPathway: { type: 'string', enum: ['UNDERGRADUATE', 'DIRECT_ENTRY', 'PART_TIME', 'POSTGRADUATE'], example: 'UNDERGRADUATE' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Student enrolled successfully' },
+        },
+      },
+    },
+    '/students/{studentId}/enrollments': {
+      get: {
+        tags: ['CourseManagement'],
+        summary: 'Get all programme enrollment history for a student',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'studentId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            description: 'User ID of the student',
+          },
+        ],
+        responses: {
+          200: { description: 'Student enrollment history retrieved successfully' },
+        },
+      },
+    },
+
     '/courses': {
       post: {
         tags: ['CourseManagement'],
