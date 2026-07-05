@@ -7,6 +7,11 @@ import {
   handleUpdateApplicationStatus,
   onboardHostelAdmin,
   onboardLecturer,
+  onboardHOD,
+  onboardAdmissionOfficer,
+  onboardExaminationOfficer,
+  onboardFinanceOfficer,
+  onboardHostelStaff,
   handleCreateSession,
   handleActivateSession,
   handleCreateSemester,
@@ -18,6 +23,7 @@ import { validateRequest, validateQuery } from '../../utils/validation';
 import {
   createHostelAdminSchema,
   createLecturerSchema,
+  createStaffSchema,
   getApplicationsQuerySchema,
   reviewStaffSchema,
   updateApplicationStatusSchema,
@@ -39,6 +45,32 @@ router.post(
   validateRequest(createHostelAdminSchema),
   onboardHostelAdmin,
 );
+router.post(
+  '/hods',
+  validateRequest(createStaffSchema),
+  onboardHOD,
+);
+router.post(
+  '/admission-officers',
+  validateRequest(createStaffSchema),
+  onboardAdmissionOfficer,
+);
+router.post(
+  '/examination-officers',
+  validateRequest(createStaffSchema),
+  onboardExaminationOfficer,
+);
+router.post(
+  '/finance-officers',
+  validateRequest(createStaffSchema),
+  onboardFinanceOfficer,
+);
+router.post(
+  '/hostel-staff',
+  validateRequest(createStaffSchema),
+  onboardHostelStaff,
+);
+
 router.patch('/staff/:userId/verify', approveStaff);
 router.patch(
   '/staff/:userId/reject',

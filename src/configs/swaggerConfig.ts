@@ -687,7 +687,7 @@ const swaggerSpec = {
     '/admin/hostel-admins': {
       post: {
         tags: ['SchoolAdmin'],
-        summary: 'Create hostel admin account',
+        summary: 'Create hostel manager account',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -719,8 +719,207 @@ const swaggerSpec = {
         },
         responses: {
           201: {
-            description:
-              'Hostel admin submitted (pending school-admin approval)',
+            description: 'Hostel manager created successfully',
+          },
+        },
+      },
+    },
+    '/admin/hods': {
+      post: {
+        tags: ['SchoolAdmin'],
+        summary: 'Create HOD account',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
+                properties: {
+                  fullName: { type: 'string', example: 'Professor John Doe' },
+                  staffId: { type: 'string', example: 'HOD-1001' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'johndoe@uniplug.com',
+                  },
+                  department: { type: 'string', example: 'Chemistry' },
+                  password: { type: 'string', example: 'Secure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'HOD created successfully',
+          },
+        },
+      },
+    },
+    '/admin/admission-officers': {
+      post: {
+        tags: ['SchoolAdmin'],
+        summary: 'Create Admission Officer account',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
+                properties: {
+                  fullName: { type: 'string', example: 'Chidi Benson' },
+                  staffId: { type: 'string', example: 'ADM-2001' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'chidi@uniplug.com',
+                  },
+                  department: { type: 'string', example: 'Registry' },
+                  password: { type: 'string', example: 'Secure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Admission Officer created successfully',
+          },
+        },
+      },
+    },
+    '/admin/examination-officers': {
+      post: {
+        tags: ['SchoolAdmin'],
+        summary: 'Create Examination Officer account',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
+                properties: {
+                  fullName: { type: 'string', example: 'Fatima Audu' },
+                  staffId: { type: 'string', example: 'EXM-3001' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'fatima@uniplug.com',
+                  },
+                  department: { type: 'string', example: 'Exams and Records' },
+                  password: { type: 'string', example: 'Secure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Examination Officer created successfully',
+          },
+        },
+      },
+    },
+    '/admin/finance-officers': {
+      post: {
+        tags: ['SchoolAdmin'],
+        summary: 'Create Finance Officer account',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
+                properties: {
+                  fullName: { type: 'string', example: 'Tunde Yusuf' },
+                  staffId: { type: 'string', example: 'FIN-4001' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'tunde@uniplug.com',
+                  },
+                  department: { type: 'string', example: 'Bursary' },
+                  password: { type: 'string', example: 'Secure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Finance Officer created successfully',
+          },
+        },
+      },
+    },
+    '/admin/hostel-staff': {
+      post: {
+        tags: ['SchoolAdmin'],
+        summary: 'Create Hostel Staff account',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: [
+                  'fullName',
+                  'staffId',
+                  'email',
+                  'department',
+                  'password',
+                ],
+                properties: {
+                  fullName: { type: 'string', example: 'Mercy John' },
+                  staffId: { type: 'string', example: 'HOS-5001' },
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'mercy@uniplug.com',
+                  },
+                  department: { type: 'string', example: 'Hostel Services' },
+                  password: { type: 'string', example: 'Secure123' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Hostel Staff created successfully',
           },
         },
       },
