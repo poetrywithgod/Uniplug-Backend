@@ -453,7 +453,7 @@ export const sendStaffOnboardingEmail = async (payload: {
   name: string;
   email: string;
   password: string;
-  role: 'LECTURER' | 'HOSTEL_MANAGER';
+  role: string;
   adminId: string;
   schoolId: string;
   school: string;

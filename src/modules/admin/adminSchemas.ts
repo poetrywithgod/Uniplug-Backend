@@ -27,6 +27,9 @@ export const createLecturerSchema = staffSchema.transform((data) => ({
   staffId: data.staffId.trim(),
 }));
 
+export const createStaffSchema = createLecturerSchema;
+
+
 export const createHostelAdminSchema = staffSchema.transform((data) => ({
   ...data,
   fullName: normalizeName(data.fullName),
