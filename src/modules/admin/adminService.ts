@@ -38,7 +38,14 @@ const splitFullName = (
 
 const createStaffAccount = async (
   payload: CreateStaffPayload,
-  role: 'LECTURER' | 'HOSTEL_MANAGER',
+  role:
+    | 'LECTURER'
+    | 'HOSTEL_MANAGER'
+    | 'HOD'
+    | 'ADMISSION_OFFICER'
+    | 'EXAMINATION_OFFICER'
+    | 'FINANCE_OFFICER'
+    | 'HOSTEL_STAFF',
   actor: ActorContext,
 ) => {
   if (!actor.tenantId || !actor.schoolId || !actor.school) {
@@ -177,7 +184,7 @@ const createStaffAccount = async (
   });
 
   return {
-    message: `${role === 'LECTURER' ? 'Lecturer' : 'Hostel manager'} account created and approved successfully. OTP and login details sent by email.`,
+    message: `${role.replace('_', ' ').toLowerCase()} account created and approved successfully. OTP and login details sent by email.`,
     user,
   };
 };
@@ -195,6 +202,42 @@ export const createHostelAdmin = async (
 ) => {
   return createStaffAccount(payload, 'HOSTEL_MANAGER', actor);
 };
+
+export const createHOD = async (
+  payload: CreateStaffPayload,
+  actor: ActorContext,
+) => {
+  return createStaffAccount(payload, 'HOD', actor);
+};
+
+export const createAdmissionOfficer = async (
+  payload: CreateStaffPayload,
+  actor: ActorContext,
+) => {
+  return createStaffAccount(payload, 'ADMISSION_OFFICER', actor);
+};
+
+export const createExaminationOfficer = async (
+  payload: CreateStaffPayload,
+  actor: ActorContext,
+) => {
+  return createStaffAccount(payload, 'EXAMINATION_OFFICER', actor);
+};
+
+export const createFinanceOfficer = async (
+  payload: CreateStaffPayload,
+  actor: ActorContext,
+) => {
+  return createStaffAccount(payload, 'FINANCE_OFFICER', actor);
+};
+
+export const createHostelStaff = async (
+  payload: CreateStaffPayload,
+  actor: ActorContext,
+) => {
+  return createStaffAccount(payload, 'HOSTEL_STAFF', actor);
+};
+
 
 export const verifyStaffAccount = async (
   userId: string,

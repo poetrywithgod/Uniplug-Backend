@@ -4,6 +4,11 @@ import catchAsync from '../../utils/catchAsync';
 import {
   createHostelAdmin,
   createLecturer,
+  createHOD,
+  createAdmissionOfficer,
+  createExaminationOfficer,
+  createFinanceOfficer,
+  createHostelStaff,
   getApplications,
   rejectStaffAccount,
   updateApplicationStatus,
@@ -13,7 +18,6 @@ import {
   createSemester,
   activateSemester,
   getSessions,
-
 } from './adminService';
 
 export const onboardLecturer = catchAsync(
@@ -37,6 +41,62 @@ export const onboardHostelAdmin = catchAsync(
     });
   },
 );
+
+export const onboardHOD = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await createHOD(req.body, res.locals.user);
+
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const onboardAdmissionOfficer = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await createAdmissionOfficer(req.body, res.locals.user);
+
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const onboardExaminationOfficer = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await createExaminationOfficer(req.body, res.locals.user);
+
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const onboardFinanceOfficer = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await createFinanceOfficer(req.body, res.locals.user);
+
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const onboardHostelStaff = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const result = await createHostelStaff(req.body, res.locals.user);
+
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
 
 export const approveStaff = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
