@@ -4,19 +4,22 @@ import createError from 'http-errors';
 import prisma from '../configs/prismaConfig';
 import { verifyAccessToken } from '../modules/auth/authSecurity';
 
-type AllowedRole =
-  | 'SUPER_ADMIN'
-  | 'SCHOOL_ADMIN'
-  | 'ADMISSION_OFFICER'
-  | 'HOD'
-  | 'LECTURER'
-  | 'EXAMINATION_OFFICER'
-  | 'FINANCE_OFFICER'
-  | 'HOSTEL_MANAGER'
-  | 'HOSTEL_STAFF'
-  | 'STUDENT'
-  | 'APPLICANT'
-  | 'PARENT';
+export const ROLES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  SCHOOL_ADMIN: 'SCHOOL_ADMIN',
+  ADMISSION_OFFICER: 'ADMISSION_OFFICER',
+  HOD: 'HOD',
+  LECTURER: 'LECTURER',
+  EXAMINATION_OFFICER: 'EXAMINATION_OFFICER',
+  FINANCE_OFFICER: 'FINANCE_OFFICER',
+  HOSTEL_MANAGER: 'HOSTEL_MANAGER',
+  HOSTEL_STAFF: 'HOSTEL_STAFF',
+  STUDENT: 'STUDENT',
+  APPLICANT: 'APPLICANT',
+  PARENT: 'PARENT',
+} as const;
+
+export type AllowedRole = keyof typeof ROLES;
 
 const getBearerToken = (authHeader?: string): string | null => {
   if (!authHeader) {
