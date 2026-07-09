@@ -18,6 +18,7 @@ import {
   createSemester,
   activateSemester,
   getSessions,
+  getAdmittedStudents,
 } from './adminService';
 
 export const onboardLecturer = catchAsync(
@@ -219,6 +220,17 @@ export const handleActivateSemester = catchAsync(
 export const handleGetSessions = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const result = await getSessions(res.locals.user);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const handleGetAdmittedStudents = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const query = req.query as any;
+    const result = await getAdmittedStudents(query, res.locals.user);
     res.status(200).json({
       status: 'success',
       ...result,
