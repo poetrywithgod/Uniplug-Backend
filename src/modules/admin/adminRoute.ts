@@ -18,7 +18,7 @@ import {
   handleActivateSemester,
   handleGetSessions,
 } from './adminController';
-import { requireAuth, requireRole } from '../../middlewares/authMiddleware';
+import { requireAuth, requireRole, ROLES } from '../../middlewares/authMiddleware';
 import { validateRequest, validateQuery } from '../../utils/validation';
 import {
   createHostelAdminSchema,
@@ -33,7 +33,23 @@ import {
 
 const router = express.Router();
 
-router.use(requireAuth, requireRole('SCHOOL_ADMIN'));
+router.use(requireAuth);
+
+router.get(
+  '/applications',
+  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
+  validateQuery(getApplicationsQuerySchema),
+  handleGetApplications,
+);
+
+router.patch(
+  '/applications/:applicationId/status',
+  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
+  validateRequest(updateApplicationStatusSchema),
+  handleUpdateApplicationStatus,
+);
+
+router.use(requireRole(ROLES.SCHOOL_ADMIN));
 
 router.post(
   '/lecturers',
@@ -76,18 +92,6 @@ router.patch(
   '/staff/:userId/reject',
   validateRequest(reviewStaffSchema),
   declineStaff,
-);
-
-router.get(
-  '/applications',
-  validateQuery(getApplicationsQuerySchema),
-  handleGetApplications,
-);
-
-router.patch(
-  '/applications/:applicationId/status',
-  validateRequest(updateApplicationStatusSchema),
-  handleUpdateApplicationStatus,
 );
 
 // Academic Session & Semester Management
