@@ -329,7 +329,7 @@ export const getApplications = async (
   actor: ActorContext,
 ) => {
   if (!actor.tenantId) {
-    throw createError(400, 'School admin account is not linked to a tenant.');
+    throw createError(400, 'User account is not linked to a tenant.');
   }
 
   const { page, limit, status, program, session, search } = query;
@@ -434,7 +434,7 @@ export const updateApplicationStatus = async (
   actor: ActorContext,
 ) => {
   if (!actor.tenantId) {
-    throw createError(400, 'School admin account is not linked to a tenant.');
+    throw createError(400, 'User account is not linked to a tenant.');
   }
 
   const application = await prisma.application.findUnique({
