@@ -90,3 +90,11 @@ export const createSemesterSchema = z.object({
   isActive: z.boolean().optional().default(false),
 });
 
+export const getAdmittedStudentsQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  search: z.string().optional(),
+  programmeId: z.string().optional(),
+  session: z.string().optional(),
+});
+
