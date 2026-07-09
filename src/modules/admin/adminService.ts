@@ -641,3 +641,134 @@ export const getSessions = async (actor: ActorContext) => {
   };
 };
 
+export const getAdmittedStudents = async (
+  query: {
+    page: number;
+    limit: number;
+    search?: string;
+    programmeId?: string;
+    session?: string;
+  },
+  actor: ActorContext & { role?: string },
+) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'User account is not linked to a tenant.');
+  }
+
+  const { page, limit, search, programmeId, session } = query;
+  const skip = (page - 1) * limit;
+
+  // Build the dynamic Prisma filter
+  const where: any = {
+    role: 'STUDENT',
+    tenantId: actor.tenantId,
+  };
+
+  const enrollmentFilter: any = { isActive: true };
+
+  if (programmeId) {
+    enrollmentFilter.programmeId = programmeId;
+  }
+
+  if (session) {
+    enrollmentFilter.startSession = {
+      name: session,
+    };
+  }
+
+  // If HOD, scope visibility to HOD's department only
+  if (actor.role === 'HOD') {
+    if (programmeId) {
+      // If programmeId is supplied, verify it belongs to HOD's department
+      const programme = await prisma.programme.findFirst({
+        where: {
+          id: programmeId,
+          tenantId: actor.tenantId,
+          department: {
+            hodId: actor.id,
+          },
+        },
+      });
+      if (!programme) {
+        throw createError(403, 'You do not have permission to view students in this programme.');
+      }
+    }
+    
+    // Set HOD department filter on programme enrollment
+    enrollmentFilter.programme = {
+      department: {
+        hodId: actor.id,
+      },
+    };
+  }
+
+  // If either programmeId, session, or HOD role is present, filter using programmeEnrollments some
+  if (programmeId || session || actor.role === 'HOD') {
+    where.programmeEnrollments = {
+      some: enrollmentFilter,
+    };
+  }
+
+  // Text search on firstName, lastName, or email
+  const trimmedSearch = search?.trim();
+  if (trimmedSearch) {
+    where.OR = [
+      { firstName: { contains: trimmedSearch, mode: 'insensitive' } },
+      { lastName: { contains: trimmedSearch, mode: 'insensitive' } },
+      { email: { contains: trimmedSearch, mode: 'insensitive' } },
+    ];
+  }
+
+  const [students, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+        role: true,
+        isVerified: true,
+        level: true,
+        staffId: true,
+        department: true,
+        createdAt: true,
+        updatedAt: true,
+        programmeEnrollments: {
+          where: { isActive: true },
+          include: {
+            programme: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                department: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    data: students,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
