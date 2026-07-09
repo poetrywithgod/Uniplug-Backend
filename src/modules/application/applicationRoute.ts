@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, requireRole } from '../../middlewares/authMiddleware';
+import { requireAuth, requireRole, ROLES } from '../../middlewares/authMiddleware';
 import { validateRequest } from '../../utils/validation';
 import * as applicationController from './applicationController';
 import {
@@ -14,7 +14,7 @@ import {
 const router = Router();
 
 // All application routes require the user to be authenticated and an applicant
-router.use(requireAuth, requireRole('APPLICANT'));
+router.use(requireAuth, requireRole(ROLES.APPLICANT));
 
 // Start a new application
 router.post(
