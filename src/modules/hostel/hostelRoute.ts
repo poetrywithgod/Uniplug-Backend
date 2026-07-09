@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, requireRole } from '../../middlewares/authMiddleware';
+import { requireAuth, requireRole, ROLES } from '../../middlewares/authMiddleware';
 import { validateRequest } from '../../utils/validation';
 import * as hostelController from './hostelController';
 import {
@@ -14,19 +14,19 @@ const router = Router();
 router.get(
   '/available',
   requireAuth,
-  requireRole('STUDENT'),
+  requireRole(ROLES.STUDENT),
   hostelController.getAvailableHostels,
 );
 
 router.post(
   '/:id/apply',
   requireAuth,
-  requireRole('STUDENT'),
+  requireRole(ROLES.STUDENT),
   hostelController.applyForHostel,
 );
 
 // Routes for HOSTEL_MANAGER
-router.use(requireAuth, requireRole('HOSTEL_MANAGER'));
+router.use(requireAuth, requireRole(ROLES.HOSTEL_MANAGER));
 
 router.post(
   '/',
