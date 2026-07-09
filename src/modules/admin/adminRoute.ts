@@ -17,6 +17,7 @@ import {
   handleCreateSemester,
   handleActivateSemester,
   handleGetSessions,
+  handleGetAdmittedStudents,
 } from './adminController';
 import { requireAuth, requireRole, ROLES } from '../../middlewares/authMiddleware';
 import { validateRequest, validateQuery } from '../../utils/validation';
@@ -29,6 +30,7 @@ import {
   updateApplicationStatusSchema,
   createSessionSchema,
   createSemesterSchema,
+  getAdmittedStudentsQuerySchema,
 } from './adminSchemas';
 
 const router = express.Router();
@@ -47,6 +49,13 @@ router.patch(
   requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
   validateRequest(updateApplicationStatusSchema),
   handleUpdateApplicationStatus,
+);
+
+router.get(
+  '/students',
+  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER, ROLES.HOD),
+  validateQuery(getAdmittedStudentsQuerySchema),
+  handleGetAdmittedStudents,
 );
 
 router.use(requireRole(ROLES.SCHOOL_ADMIN));
