@@ -189,6 +189,9 @@ const createStaffAccount = async (
   };
 };
 
+/**
+ * Onboard and create a new Lecturer account under the admin's school tenant.
+ */
 export const createLecturer = async (
   payload: CreateStaffPayload,
   actor: ActorContext,
@@ -196,6 +199,9 @@ export const createLecturer = async (
   return createStaffAccount(payload, 'LECTURER', actor);
 };
 
+/**
+ * Onboard and create a new Hostel Admin (Hostel Manager) account under the admin's school tenant.
+ */
 export const createHostelAdmin = async (
   payload: CreateStaffPayload,
   actor: ActorContext,
@@ -203,6 +209,9 @@ export const createHostelAdmin = async (
   return createStaffAccount(payload, 'HOSTEL_MANAGER', actor);
 };
 
+/**
+ * Onboard and create a new HOD (Head of Department) account under the admin's school tenant.
+ */
 export const createHOD = async (
   payload: CreateStaffPayload,
   actor: ActorContext,
@@ -210,6 +219,9 @@ export const createHOD = async (
   return createStaffAccount(payload, 'HOD', actor);
 };
 
+/**
+ * Onboard and create a new Admission Officer account under the admin's school tenant.
+ */
 export const createAdmissionOfficer = async (
   payload: CreateStaffPayload,
   actor: ActorContext,
@@ -217,6 +229,9 @@ export const createAdmissionOfficer = async (
   return createStaffAccount(payload, 'ADMISSION_OFFICER', actor);
 };
 
+/**
+ * Onboard and create a new Examination Officer account under the admin's school tenant.
+ */
 export const createExaminationOfficer = async (
   payload: CreateStaffPayload,
   actor: ActorContext,
@@ -224,6 +239,9 @@ export const createExaminationOfficer = async (
   return createStaffAccount(payload, 'EXAMINATION_OFFICER', actor);
 };
 
+/**
+ * Onboard and create a new Finance Officer account under the admin's school tenant.
+ */
 export const createFinanceOfficer = async (
   payload: CreateStaffPayload,
   actor: ActorContext,
@@ -231,6 +249,9 @@ export const createFinanceOfficer = async (
   return createStaffAccount(payload, 'FINANCE_OFFICER', actor);
 };
 
+/**
+ * Onboard and create a new Hostel Staff account under the admin's school tenant.
+ */
 export const createHostelStaff = async (
   payload: CreateStaffPayload,
   actor: ActorContext,
@@ -239,6 +260,9 @@ export const createHostelStaff = async (
 };
 
 
+/**
+ * Verify and approve a staff member's account (applicable only to Lecturer and Hostel Manager).
+ */
 export const verifyStaffAccount = async (
   userId: string,
   actor: ActorContext,
@@ -277,6 +301,9 @@ export const verifyStaffAccount = async (
   };
 };
 
+/**
+ * Reject a staff member's account, logging a rejection reason remark.
+ */
 export const rejectStaffAccount = async (
   userId: string,
   actor: ActorContext,
@@ -317,6 +344,9 @@ export const rejectStaffAccount = async (
   };
 };
 
+/**
+ * Fetch a paginated and filterable list of student admission applications submitted to the school.
+ */
 export const getApplications = async (
   query: {
     page: number;
@@ -425,6 +455,10 @@ export const getApplications = async (
   };
 };
 
+/**
+ * Update the admission application status (Approve/Reject/Under Review).
+ * Approving an application automatically upgrades the user's role to STUDENT.
+ */
 export const updateApplicationStatus = async (
   id: string,
   payload: {
@@ -483,6 +517,9 @@ export const updateApplicationStatus = async (
   };
 };
 
+/**
+ * Create a new Academic Session for the school tenant.
+ */
 export const createSession = async (
   payload: { name: string; isActive?: boolean },
   actor: ActorContext,
@@ -520,6 +557,9 @@ export const createSession = async (
   };
 };
 
+/**
+ * Activate a specific Academic Session, automatically deactivating other sessions.
+ */
 export const activateSession = async (sessionId: string, actor: ActorContext) => {
   if (!actor.tenantId) {
     throw createError(400, 'School admin account is not linked to a tenant.');
@@ -549,6 +589,9 @@ export const activateSession = async (sessionId: string, actor: ActorContext) =>
   };
 };
 
+/**
+ * Create a new Academic Semester nested under a specific session.
+ */
 export const createSemester = async (
   sessionId: string,
   payload: { name: string; isActive?: boolean },
@@ -596,6 +639,9 @@ export const createSemester = async (
   };
 };
 
+/**
+ * Activate an Academic Semester, deactivating other semesters in the same session.
+ */
 export const activateSemester = async (semesterId: string, actor: ActorContext) => {
   if (!actor.tenantId) {
     throw createError(400, 'School admin account is not linked to a tenant.');
@@ -625,6 +671,9 @@ export const activateSemester = async (semesterId: string, actor: ActorContext) 
   };
 };
 
+/**
+ * Fetch all Academic Sessions configured for the tenant.
+ */
 export const getSessions = async (actor: ActorContext) => {
   if (!actor.tenantId) {
     throw createError(400, 'School admin account is not linked to a tenant.');
@@ -641,6 +690,10 @@ export const getSessions = async (actor: ActorContext) => {
   };
 };
 
+/**
+ * Fetch a paginated list of admitted students.
+ * Automatically scopes results to a department if requested by an HOD.
+ */
 export const getAdmittedStudents = async (
   query: {
     page: number;
