@@ -2,6 +2,9 @@ import createError from 'http-errors';
 import prisma from '../../configs/prismaConfig';
 import { HostelApplicationStatus, HostelType } from '../../../generated/prisma';
 
+/**
+ * Create a new hostel record for a specific school tenant.
+ */
 export const createHostel = async (data: any, tenantId: string) => {
   return prisma.hostel.create({
     data: {
@@ -11,6 +14,10 @@ export const createHostel = async (data: any, tenantId: string) => {
   });
 };
 
+/**
+ * Update the details of an existing hostel. 
+ * Checks capacity constraints to prevent capacity from falling below approved allocations.
+ */
 export const updateHostel = async (id: string, tenantId: string, data: any) => {
   const hostel = await prisma.hostel.findFirst({
     where: { id, tenantId },
@@ -43,6 +50,9 @@ export const updateHostel = async (id: string, tenantId: string, data: any) => {
   });
 };
 
+/**
+ * Delete a hostel record after confirming it belongs to the active tenant.
+ */
 export const deleteHostel = async (id: string, tenantId: string) => {
   const hostel = await prisma.hostel.findFirst({
     where: { id, tenantId },
@@ -57,6 +67,10 @@ export const deleteHostel = async (id: string, tenantId: string) => {
   });
 };
 
+/**
+ * Fetch list of hostels for a tenant, calculating available space/capacity for each.
+ * Supports filtering to exclude hostels a specific student has already applied to.
+ */
 export const getHostels = async (
   tenantId: string,
   excludeStudentId?: string,
@@ -95,6 +109,10 @@ export const getHostels = async (
   }));
 };
 
+/**
+ * Submit an allocation request for a hostel. 
+ * Validates availability, duplicates, and verifies student gender restrictions against the admission records.
+ */
 export const applyForHostel = async (
   hostelId: string,
   studentId: string,
@@ -172,6 +190,9 @@ export const applyForHostel = async (
   });
 };
 
+/**
+ * Fetch all allocation applications submitted for a specific hostel.
+ */
 export const getHostelApplications = async (
   hostelId: string,
   tenantId: string,
@@ -200,6 +221,10 @@ export const getHostelApplications = async (
   });
 };
 
+/**
+ * Approve or reject a hostel application in a secure database transaction.
+ * Double-checks current capacity before finalizing approvals.
+ */
 export const reviewHostelApplication = async (
   applicationId: string,
   tenantId: string,

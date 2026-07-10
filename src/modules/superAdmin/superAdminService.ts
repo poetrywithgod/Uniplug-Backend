@@ -92,6 +92,10 @@ const generateUniqueSchoolId = async (schoolName: string): Promise<string> => {
   return `${prefix}-${Date.now().toString().slice(-4)}`;
 };
 
+/**
+ * Create a new school tenant instance.
+ * Automatically derives a unique school ID and short school abbreviation if not supplied.
+ */
 export const createTenant = async (payload: CreateTenantPayload) => {
   const existingTenant = await prisma.tenant.findFirst({
     where: {
@@ -136,6 +140,10 @@ export const createTenant = async (payload: CreateTenantPayload) => {
   };
 };
 
+/**
+ * Onboard and create the primary administrator account (SCHOOL_ADMIN) for a tenant.
+ * Triggers an onboarding email containing access credentials.
+ */
 export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
   const tenant = await prisma.tenant.findUnique({
     where: { schoolId: payload.schoolId },
@@ -255,6 +263,9 @@ export const createSchoolAdmin = async (payload: CreateSchoolAdminPayload) => {
   };
 };
 
+/**
+ * Verify and approve a School Admin account to grant them system access.
+ */
 export const verifySchoolAdmin = async (userId: string) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -286,6 +297,9 @@ export const verifySchoolAdmin = async (userId: string) => {
   };
 };
 
+/**
+ * Reject a School Admin account, logging a rejection reason remark.
+ */
 export const rejectSchoolAdmin = async (userId: string, remark?: string) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -318,6 +332,9 @@ export const rejectSchoolAdmin = async (userId: string, remark?: string) => {
   };
 };
 
+/**
+ * Fetch all registered tenants in the platform.
+ */
 export const getTenants = async () => {
   const tenants = await prisma.tenant.findMany({
     orderBy: { createdAt: 'desc' },
@@ -328,6 +345,9 @@ export const getTenants = async () => {
   };
 };
 
+/**
+ * Fetch all School Admins belonging to a specific tenant (queried by tenant ID or school ID).
+ */
 export const getSchoolAdmins = async (tenantIdentifier: string) => {
   // Support searching by Mongo ObjectId (24 chars hex) or string schoolId (e.g. UPH-009)
   const isObjectId = /^[0-9a-fA-F]{24}$/.test(tenantIdentifier);
@@ -374,6 +394,9 @@ export const getSchoolAdmins = async (tenantIdentifier: string) => {
   };
 };
 
+/**
+ * Fetch all School Admins across the entire platform.
+ */
 export const getAllSchoolAdmins = async () => {
   const schoolAdmins = await prisma.user.findMany({
     where: {
