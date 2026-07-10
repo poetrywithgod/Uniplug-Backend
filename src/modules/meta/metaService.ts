@@ -14,6 +14,10 @@ const departmentsFilePath = path.join(
   'departments.json',
 );
 
+/**
+ * Fetch the configured academic departments dataset from the local JSON storage file.
+ * Used for populating dropdown lists and department selections across the app.
+ */
 export const getDepartments = async (): Promise<DepartmentsPayload> => {
   const fileContent = await fs.readFile(departmentsFilePath, 'utf-8');
   return JSON.parse(fileContent) as DepartmentsPayload;

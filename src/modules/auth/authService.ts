@@ -68,6 +68,10 @@ const toPublicUser = (user: {
   department: user.department,
 });
 
+/**
+ * Register a new applicant or parent account.
+ * Generates an email OTP verification code and registers password credentials.
+ */
 export const registerUser = async (payload: RegisterBody) => {
   const firstName = normalizeName(payload.firstName);
   const lastName = normalizeName(payload.lastName);
@@ -147,6 +151,10 @@ const user = existingUser
   };
 };
 
+/**
+ * Verify the OTP sent to the user's email during registration.
+ * Marks the account as verified and issues a JWT access token.
+ */
 export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
   const email = normalizeEmail(payload.email);
   const user = await prisma.user.findUnique({
@@ -207,6 +215,9 @@ export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
   };
 };
 
+/**
+ * Re-generate and re-send the registration OTP verification code to the user's email.
+ */
 export const resendRegistrationOtp = async (payload: ResendOtpBody) => {
   const email = normalizeEmail(payload.email);
 
@@ -241,6 +252,10 @@ export const resendRegistrationOtp = async (payload: ResendOtpBody) => {
   };
 };
 
+/**
+ * Validate credentials (email or Admin ID) and log in a user.
+ * Generates and returns a JWT access token for verified and approved accounts.
+ */
 export const loginUser = async (payload: LoginBody) => {
   const identifier = normalizeEmail(payload.email);
 
@@ -302,6 +317,9 @@ export const loginUser = async (payload: LoginBody) => {
   };
 };
 
+/**
+ * Initiate password recovery by generating a reset token and emailing a recovery link.
+ */
 export const forgotPassword = async (payload: ForgotPasswordBody) => {
   const email = normalizeEmail(payload.email);
 
@@ -342,6 +360,9 @@ export const forgotPassword = async (payload: ForgotPasswordBody) => {
   };
 };
 
+/**
+ * Verify a reset token and update the user's password credentials.
+ */
 export const resetPassword = async (payload: ResetPasswordBody) => {
   const tokenHash = hashResetToken(payload.token);
 
