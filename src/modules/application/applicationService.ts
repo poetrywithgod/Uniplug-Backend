@@ -15,6 +15,9 @@ import {
   CLOUDINARY_API_SECRET,
 } from '../../configs/envConfig';
 
+/**
+ * Generate a secure Cloudinary upload signature and parameters for file upload.
+ */
 export const getCloudinarySignature = async (
   applicantId: string,
   applicationId: string,
@@ -55,6 +58,9 @@ export const getCloudinarySignature = async (
   };
 };
 
+/**
+ * Save reference URL and type of an uploaded document to the admission application record.
+ */
 export const addDocumentToApplication = async (
   applicantId: string,
   applicationId: string,
@@ -110,6 +116,9 @@ export const addDocumentToApplication = async (
   };
 };
 
+/**
+ * Initialize a new admission application draft for a school.
+ */
 export const startApplication = async (
   applicantId: string,
   payload: StartApplicationBody,
@@ -161,6 +170,9 @@ export const startApplication = async (
   };
 };
 
+/**
+ * Update step 1 (Personal Details) of an admission application.
+ */
 export const updatePersonalDetails = async (
   applicantId: string,
   applicationId: string,
@@ -202,6 +214,9 @@ export const updatePersonalDetails = async (
   };
 };
 
+/**
+ * Update step 2 (Academic History) of an admission application.
+ */
 export const updateAcademicHistory = async (
   applicantId: string,
   applicationId: string,
@@ -243,6 +258,9 @@ export const updateAcademicHistory = async (
   };
 };
 
+/**
+ * Update step 3 (Programme Selection) of an admission application.
+ */
 export const updateProgrammeSelection = async (
   applicantId: string,
   applicationId: string,
@@ -284,6 +302,10 @@ export const updateProgrammeSelection = async (
   };
 };
 
+/**
+ * Perform validation rules for mandatory documents depending on the admission pathway,
+ * and finalize the submission of the application.
+ */
 export const submitApplication = async (
   applicantId: string,
   applicationId: string,
@@ -374,6 +396,9 @@ export const submitApplication = async (
   };
 };
 
+/**
+ * Fetch all admission applications created by a specific applicant user.
+ */
 export const getMyApplications = async (applicantId: string) => {
   const applications = await prisma.application.findMany({
     where: { applicantId },

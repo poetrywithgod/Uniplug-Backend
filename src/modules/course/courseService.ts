@@ -3,6 +3,9 @@ import prisma from '../../configs/prismaConfig';
 import { CourseCategory, AssignmentStatus, LecturerRole, EnrollmentStatus } from '../../../generated/prisma';
 
 // --- Departments ---
+/**
+ * Create a new Department under a specific school tenant.
+ */
 export const createDepartment = async (
   payload: { name: string; hodId?: string; facultyId?: string },
   tenantId: string
@@ -37,6 +40,9 @@ export const createDepartment = async (
   return { department };
 };
 
+/**
+ * Fetch all departments configured for a school tenant, including HOD and Faculty details.
+ */
 export const getDepartments = async (tenantId: string) => {
   const departments = await prisma.department.findMany({
     where: { tenantId },
@@ -49,6 +55,9 @@ export const getDepartments = async (tenantId: string) => {
 };
 
 // --- Faculties ---
+/**
+ * Create a new Faculty record under a school tenant.
+ */
 export const createFaculty = async (
   payload: { name: string; code: string },
   tenantId: string
@@ -78,6 +87,9 @@ export const createFaculty = async (
   return { faculty };
 };
 
+/**
+ * Fetch all faculties configured for a school tenant.
+ */
 export const getFaculties = async (tenantId: string) => {
   const faculties = await prisma.faculty.findMany({
     where: { tenantId },
@@ -89,6 +101,9 @@ export const getFaculties = async (tenantId: string) => {
 
 
 // --- Courses ---
+/**
+ * Create a new course definition (master definition) in a specific department.
+ */
 export const createCourse = async (
   payload: {
     courseName: string;
@@ -135,6 +150,9 @@ export const createCourse = async (
   return { course };
 };
 
+/**
+ * Fetch all courses registered under a specific department and school tenant.
+ */
 export const getCourses = async (departmentId: string, tenantId: string) => {
   const courses = await prisma.course.findMany({
     where: { departmentId, tenantId },
@@ -143,6 +161,9 @@ export const getCourses = async (departmentId: string, tenantId: string) => {
 };
 
 // --- Course Offerings ---
+/**
+ * Create an active semester offering (CourseOffering) for a course.
+ */
 export const createCourseOffering = async (
   payload: { courseId: string; academicSession: string; semester: string },
   tenantId: string
@@ -179,6 +200,9 @@ export const createCourseOffering = async (
   return { offering };
 };
 
+/**
+ * Fetch all active course offerings registered for a school tenant.
+ */
 export const getCourseOfferings = async (tenantId: string) => {
   const offerings = await prisma.courseOffering.findMany({
     where: { tenantId, status: 'ACTIVE' },
@@ -188,6 +212,9 @@ export const getCourseOfferings = async (tenantId: string) => {
 };
 
 // --- Lecturer Assignments ---
+/**
+ * Request course assignment for a lecturer to teach a course offering.
+ */
 export const requestCourseAssignment = async (
   payload: { courseOfferingId: string; role?: 'LEAD_LECTURER' | 'CO_LECTURER' | 'TA' },
   lecturerId: string,
@@ -221,6 +248,9 @@ export const requestCourseAssignment = async (
   return { assignment };
 };
 
+/**
+ * HOD decision handler to approve or reject a lecturer's course assignment request.
+ */
 export const approveCourseAssignment = async (
   assignmentId: string,
   status: 'APPROVED' | 'REJECTED',
@@ -245,6 +275,9 @@ export const approveCourseAssignment = async (
   return { assignment: updatedAssignment };
 };
 
+/**
+ * Fetch all pending lecturer course assignments for an HOD's school.
+ */
 export const getPendingAssignments = async (tenantId: string) => {
   const assignments = await prisma.courseAssignment.findMany({
     where: { status: 'PENDING', tenantId },
@@ -257,6 +290,9 @@ export const getPendingAssignments = async (tenantId: string) => {
 };
 
 // --- Student Course Enrollment ---
+/**
+ * Register course offerings for a student, enforcing level eligibility rules.
+ */
 export const registerCourseEnrollments = async (
   payload: { courseOfferingIds: string[] },
   studentId: string,
@@ -314,6 +350,9 @@ export const registerCourseEnrollments = async (
   return { enrollments: results };
 };
 
+/**
+ * Fetch all course offering enrollments registered for a student.
+ */
 export const getStudentEnrollments = async (studentId: string, tenantId: string) => {
   const enrollments = await prisma.courseEnrollment.findMany({
     where: { studentId, tenantId },
@@ -333,6 +372,9 @@ export const getStudentEnrollments = async (studentId: string, tenantId: string)
 };
 
 // --- Lecturer Grading & Roster ---
+/**
+ * Fetch students enrolled in a course offering (the student roster), including grades.
+ */
 export const getEnrolledStudents = async (
   courseOfferingId: string,
   userId: string,
@@ -395,6 +437,9 @@ export const getEnrolledStudents = async (
   return { students: studentsRoster };
 };
 
+/**
+ * Record or update grading scores submitted by an assigned lecturer.
+ */
 export const submitGrades = async (
   courseOfferingId: string,
   payload: { grades: { studentId: string; score: number }[] },
@@ -455,6 +500,9 @@ export const submitGrades = async (
   return { grades: results };
 };
 
+/**
+ * Create a new academic programme definition in a department.
+ */
 export const createProgramme = async (
   payload: {
     name: string;
@@ -495,6 +543,9 @@ export const createProgramme = async (
   return { programme };
 };
 
+/**
+ * Fetch all academic programmes configured for the tenant.
+ */
 export const getProgrammes = async (tenantId: string, departmentId?: string) => {
   const filter: any = { tenantId };
   if (departmentId) {
@@ -508,6 +559,9 @@ export const getProgrammes = async (tenantId: string, departmentId?: string) => 
   return { programmes };
 };
 
+/**
+ * Enroll a student in an academic programme.
+ */
 export const createProgrammeEnrollment = async (
   payload: {
     studentId: string;
@@ -562,6 +616,9 @@ export const createProgrammeEnrollment = async (
   return { enrollment };
 };
 
+/**
+ * Fetch all programme enrollment history records for a student.
+ */
 export const getStudentProgrammeEnrollments = async (studentId: string, tenantId: string) => {
   const enrollments = await prisma.programmeEnrollment.findMany({
     where: { studentId, tenantId },
