@@ -24,7 +24,6 @@ export const createCourseSchema = z.object({
 
 export const createCourseOfferingSchema = z.object({
   courseId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Course ID format'),
-  academicSession: z.string().regex(/^\d{4}\/\d{4}$/, 'Session must be in format YYYY/YYYY (e.g. 2025/2026)'),
   semester: z.string().min(2, 'Semester is required'),
 });
 
