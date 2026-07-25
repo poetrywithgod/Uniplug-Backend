@@ -165,7 +165,7 @@ export const getCourses = async (departmentId: string, tenantId: string) => {
  * Create an active semester offering (CourseOffering) for a course.
  */
 export const createCourseOffering = async (
-  payload: { courseId: string; academicSession: string; semester: string },
+  payload: { courseId: string; semester: string },
   tenantId: string
 ) => {
   const course = await prisma.course.findFirst({
@@ -175,11 +175,19 @@ export const createCourseOffering = async (
     throw createError(404, 'Course not found.');
   }
 
+  // Find active academic session for the tenant
+  const activeSession = await prisma.academicSession.findFirst({
+    where: { tenantId, isActive: true },
+  });
+  if (!activeSession) {
+    throw createError(400, 'Active academic session not found. Please activate a session first.');
+  }
+
   // Check if offering already exists for this semester
   const existing = await prisma.courseOffering.findFirst({
     where: {
       courseId: payload.courseId,
-      academicSession: payload.academicSession,
+      academicSession: activeSession.name,
       semester: payload.semester,
       tenantId,
     },
@@ -191,7 +199,7 @@ export const createCourseOffering = async (
   const offering = await prisma.courseOffering.create({
     data: {
       courseId: payload.courseId,
-      academicSession: payload.academicSession,
+      academicSession: activeSession.name,
       semester: payload.semester,
       tenantId,
     },

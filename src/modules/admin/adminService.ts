@@ -825,3 +825,76 @@ export const getAdmittedStudents = async (
   };
 };
 
+/**
+ * Retrieve a paginated and filterable list of lecturers in the school.
+ * HODs can only view lecturers within their managed department(s).
+ * School Admins can view all lecturers in the tenant/school.
+ */
+export const getLecturers = async (
+  query: {
+    page: number;
+    limit: number;
+    search?: string;
+  },
+  actor: ActorContext & { role?: string },
+) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'User account is not linked to a tenant.');
+  }
+
+  const { page, limit, search } = query;
+  const skip = (page - 1) * limit;
+
+  // Build the dynamic filter
+  const where: any = {
+    role: 'LECTURER',
+    tenantId: actor.tenantId,
+  };
+
+  // Text search on firstName, lastName, or email
+  const trimmedSearch = search?.trim();
+  if (trimmedSearch) {
+    where.OR = [
+      { firstName: { contains: trimmedSearch, mode: 'insensitive' } },
+      { lastName: { contains: trimmedSearch, mode: 'insensitive' } },
+      { email: { contains: trimmedSearch, mode: 'insensitive' } },
+    ];
+  }
+
+  const [lecturers, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+        role: true,
+        isVerified: true,
+        staffId: true,
+        department: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: [
+        { department: 'asc' },
+        { firstName: 'asc' },
+      ],
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    data: lecturers,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
