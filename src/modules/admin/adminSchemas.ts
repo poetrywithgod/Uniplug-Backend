@@ -98,3 +98,9 @@ export const getAdmittedStudentsQuerySchema = z.object({
   session: z.string().optional(),
 });
 
+export const getLecturersQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  search: z.string().optional(),
+});
+
