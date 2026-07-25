@@ -58,6 +58,8 @@ router.get(
   handleGetAdmittedStudents,
 );
 
+router.get('/sessions', handleGetSessions);
+
 router.use(requireRole(ROLES.SCHOOL_ADMIN));
 
 router.post(
@@ -109,7 +111,6 @@ router.post(
   validateRequest(createSessionSchema),
   handleCreateSession,
 );
-router.get('/sessions', handleGetSessions);
 router.patch('/sessions/:id/activate', handleActivateSession);
 router.post(
   '/sessions/:sessionId/semesters',
