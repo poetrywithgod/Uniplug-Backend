@@ -496,6 +496,15 @@ export const updateApplicationStatus = async (
     dataToUpdate.rejectionReason = null;
   }
 
+  if (payload.status === 'APPROVED') {
+    const activeSession = await prisma.academicSession.findFirst({
+      where: { tenantId: actor.tenantId, isActive: true },
+    });
+    if (activeSession) {
+      dataToUpdate.session = activeSession.name;
+    }
+  }
+
   const updatedApplication = await prisma.application.update({
     where: { id },
     data: dataToUpdate,
