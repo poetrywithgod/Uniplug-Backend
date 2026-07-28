@@ -165,8 +165,9 @@ export const getCourses = async (departmentId: string, tenantId: string) => {
  * Create an active semester offering (CourseOffering) for a course.
  */
 export const createCourseOffering = async (
-  payload: { courseId: string; semester: string },
-  tenantId: string
+  payload: { courseId: string; semester: string; lecturerIds?: string[] },
+  tenantId: string,
+  assignedById?: string
 ) => {
   const course = await prisma.course.findFirst({
     where: { id: payload.courseId, tenantId },
@@ -196,16 +197,50 @@ export const createCourseOffering = async (
     throw createError(409, 'Course offering already exists for this session and semester.');
   }
 
-  const offering = await prisma.courseOffering.create({
-    data: {
-      courseId: payload.courseId,
-      academicSession: activeSession.name,
-      semester: payload.semester,
-      tenantId,
-    },
-  });
+  // Validate lecturerIds if provided
+  const uniqueLecturerIds = payload.lecturerIds ? [...new Set(payload.lecturerIds)] : [];
+  if (uniqueLecturerIds.length > 0) {
+    const lecturersCount = await prisma.user.count({
+      where: {
+        id: { in: uniqueLecturerIds },
+        role: 'LECTURER',
+        tenantId,
+      },
+    });
+    if (lecturersCount !== uniqueLecturerIds.length) {
+      throw createError(400, 'One or more provided lecturer IDs are invalid or do not belong to this school.');
+    }
+  }
 
-  return { offering };
+  return prisma.$transaction(async (tx) => {
+    const offering = await tx.courseOffering.create({
+      data: {
+        courseId: payload.courseId,
+        academicSession: activeSession.name,
+        semester: payload.semester,
+        tenantId,
+      },
+    });
+
+    if (uniqueLecturerIds.length > 0) {
+      await Promise.all(
+        uniqueLecturerIds.map((lecturerId) =>
+          tx.courseAssignment.create({
+            data: {
+              courseOfferingId: offering.id,
+              lecturerId,
+              assignedById,
+              status: 'APPROVED',
+              role: 'LEAD_LECTURER',
+              tenantId,
+            },
+          })
+        )
+      );
+    }
+
+    return { offering };
+  });
 };
 
 /**
