@@ -43,7 +43,6 @@ router.post(
 );
 router.get(
   '/programmes',
-  requireRole(ROLES.SCHOOL_ADMIN, ROLES.HOD, ROLES.APPLICANT, ROLES.STUDENT),
   controller.handleGetProgrammes
 );
 
