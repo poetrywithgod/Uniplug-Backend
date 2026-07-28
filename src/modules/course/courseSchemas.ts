@@ -63,7 +63,6 @@ export const createProgrammeSchema = z.object({
 export const createProgrammeEnrollmentSchema = z.object({
   studentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Student User ID format'),
   programmeId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Programme ID format'),
-  startSessionId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Session ID format'),
   entryLevel: z.string().min(2, 'Entry level is required'),
   currentLevel: z.string().min(2, 'Current level is required'),
   admissionPathway: z.enum(['UNDERGRADUATE', 'DIRECT_ENTRY', 'PART_TIME', 'POSTGRADUATE']),
