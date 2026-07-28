@@ -98,7 +98,7 @@ export const handleCreateCourseOffering = catchAsync(
     if (!user?.tenantId) {
       throw createError(400, 'Tenant context is missing.');
     }
-    const result = await courseService.createCourseOffering(req.body, user.tenantId);
+    const result = await courseService.createCourseOffering(req.body, user.tenantId, user.id);
     res.status(201).json({
       status: 'success',
       ...result,
