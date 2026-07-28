@@ -609,7 +609,6 @@ export const createProgrammeEnrollment = async (
   payload: {
     studentId: string;
     programmeId: string;
-    startSessionId: string;
     entryLevel: string;
     currentLevel: string;
     admissionPathway: string;
@@ -630,11 +629,11 @@ export const createProgrammeEnrollment = async (
     throw createError(404, 'Programme not found.');
   }
 
-  const sess = await prisma.academicSession.findFirst({
-    where: { id: payload.startSessionId, tenantId },
+  const activeSession = await prisma.academicSession.findFirst({
+    where: { tenantId, isActive: true },
   });
-  if (!sess) {
-    throw createError(404, 'Academic session not found.');
+  if (!activeSession) {
+    throw createError(400, 'Active academic session not found. Please activate a session first.');
   }
 
   const existing = await prisma.programmeEnrollment.findFirst({
@@ -648,7 +647,7 @@ export const createProgrammeEnrollment = async (
     data: {
       studentId: payload.studentId,
       programmeId: payload.programmeId,
-      startSessionId: payload.startSessionId,
+      startSessionId: activeSession.id,
       entryLevel: payload.entryLevel,
       currentLevel: payload.currentLevel,
       admissionPathway: payload.admissionPathway,
