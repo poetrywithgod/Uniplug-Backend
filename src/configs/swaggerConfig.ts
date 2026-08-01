@@ -683,6 +683,37 @@ const swaggerSpec = {
           },
         },
       },
+      get: {
+        tags: ['SchoolAdmin'],
+        summary: 'Get all lecturers in the tenant school sorted by department (SCHOOL_ADMIN and HOD)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Lecturers retrieved successfully' },
+        },
+      },
+    },
+    '/admin/students': {
+      get: {
+        tags: ['SchoolAdmin'],
+        summary: 'Get all admitted students in the school (SCHOOL_ADMIN, ADMISSION_OFFICER, HOD)',
+        description: 'For HODs, this automatically filters and displays only students enrolled in their department.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'programmeId', in: 'query', schema: { type: 'string' } },
+          { name: 'session', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Admitted students retrieved successfully' },
+        },
+      },
     },
     '/admin/hostel-admins': {
       post: {
@@ -1074,7 +1105,7 @@ const swaggerSpec = {
       },
       get: {
         tags: ['SchoolAdmin'],
-        summary: 'Get all academic sessions and semesters for the tenant',
+        summary: 'Get all academic sessions and semesters for the tenant (Open to all authenticated roles)',
         security: [{ bearerAuth: [] }],
         responses: {
           200: { description: 'Sessions list retrieved successfully' },
@@ -1188,6 +1219,11 @@ const swaggerSpec = {
                   totalBlocks: { type: 'integer', example: 2 },
                   totalWings: { type: 'integer', example: 4 },
                   spacePerRoom: { type: 'integer', example: 5 },
+                  pictures: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    example: ['https://res.cloudinary.com/demo/image/upload/v1234/hostel1.jpg']
+                  },
                 },
               },
             },
@@ -1284,6 +1320,10 @@ const swaggerSpec = {
                   name: { type: 'string' },
                   capacity: { type: 'integer' },
                   price: { type: 'number' },
+                  pictures: {
+                    type: 'array',
+                    items: { type: 'string' }
+                  },
                 },
               },
             },
@@ -1513,11 +1553,10 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['studentId', 'programmeId', 'startSessionId', 'entryLevel', 'currentLevel', 'admissionPathway'],
+                required: ['studentId', 'programmeId', 'entryLevel', 'currentLevel', 'admissionPathway'],
                 properties: {
                   studentId: { type: 'string', example: '60d5ec4b868e5a2b3479427b' },
                   programmeId: { type: 'string', example: '60d5ec4b868e5a2b3479427c' },
-                  startSessionId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
                   entryLevel: { type: 'string', example: '100 Level' },
                   currentLevel: { type: 'string', example: '100 Level' },
                   admissionPathway: { type: 'string', enum: ['UNDERGRADUATE', 'DIRECT_ENTRY', 'PART_TIME', 'POSTGRADUATE'], example: 'UNDERGRADUATE' },
@@ -1604,11 +1643,15 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['courseId', 'academicSession', 'semester'],
+                required: ['courseId', 'semester'],
                 properties: {
                   courseId: { type: 'string', example: '60d5ec4b868e5a2b3479427c' },
-                  academicSession: { type: 'string', example: '2025/2026' },
                   semester: { type: 'string', example: 'FIRST_SEMESTER' },
+                  lecturerIds: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    example: ['60d5ec4b868e5a2b3479428a']
+                  },
                 },
               },
             },

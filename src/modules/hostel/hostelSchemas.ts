@@ -22,6 +22,7 @@ export const createHostelSchema = z.object({
     .number()
     .int()
     .positive('Space per room must be a positive integer'),
+  pictures: z.array(z.string()).optional(),
 });
 
 export const updateHostelSchema = createHostelSchema.partial();
