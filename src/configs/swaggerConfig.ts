@@ -1188,6 +1188,42 @@ const swaggerSpec = {
         responses: { 200: { description: 'Departments list returned' } },
       },
     },
+    '/media/upload-signature': {
+      get: {
+        tags: ['Media'],
+        summary: 'Generate secure Cloudinary upload signature (Universal)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'folder', in: 'query', schema: { type: 'string', default: 'general' }, description: 'Destination folder name in Cloudinary' },
+        ],
+        responses: {
+          200: {
+            description: 'Cloudinary upload signature generated successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'string', example: 'success' },
+                    message: { type: 'string', example: 'Cloudinary upload signature generated successfully' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        signature: { type: 'string', example: '85e94b23f...' },
+                        timestamp: { type: 'integer', example: 17221789 },
+                        folder: { type: 'string', example: 'general' },
+                        cloudName: { type: 'string', example: 'cloudName' },
+                        apiKey: { type: 'string', example: '1234567890' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     // --- Hostel Endpoints ---
     '/hostels': {
       post: {
