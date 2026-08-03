@@ -20,6 +20,9 @@ import {
   getSessions,
   getAdmittedStudents,
   getLecturers,
+  getHODs,
+  assignHODToDepartment,
+  removeHODFromDepartment,
 } from './adminService';
 
 export const onboardLecturer = catchAsync(
@@ -246,6 +249,49 @@ export const handleGetLecturers = catchAsync(
     res.status(200).json({
       status: 'success',
       ...result,
+    });
+  },
+);
+
+export const handleGetHODs = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user as { tenantId: string };
+    const hods = await getHODs(user.tenantId);
+
+    res.status(200).json({
+      status: 'success',
+      data: hods,
+    });
+  },
+);
+
+export const handleAssignHODToDepartment = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user as { tenantId: string };
+    const departmentId = req.params.departmentId as string;
+    const { hodId } = req.body;
+
+    const department = await assignHODToDepartment(departmentId, hodId, user.tenantId);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'HOD assigned successfully',
+      data: department,
+    });
+  },
+);
+
+export const handleRemoveHODFromDepartment = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user as { tenantId: string };
+    const departmentId = req.params.departmentId as string;
+
+    const department = await removeHODFromDepartment(departmentId, user.tenantId);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'HOD removed successfully',
+      data: department,
     });
   },
 );

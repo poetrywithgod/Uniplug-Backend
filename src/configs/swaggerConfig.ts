@@ -691,6 +691,7 @@ const swaggerSpec = {
           { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
           { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
           { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'departmentId', in: 'query', schema: { type: 'string' }, description: 'Filter lecturers by department ID' },
         ],
         responses: {
           200: { description: 'Lecturers retrieved successfully' },
@@ -712,6 +713,47 @@ const swaggerSpec = {
         ],
         responses: {
           200: { description: 'Admitted students retrieved successfully' },
+        },
+      },
+    },
+    '/admin/departments/{departmentId}/hod': {
+      patch: {
+        tags: ['SchoolAdmin'],
+        summary: 'Assign or reassign an HOD to a department (SCHOOL_ADMIN only)',
+        description: 'Enforces that a user can only be the HOD of one department. Promotes them to HOD role and demotes the previous HOD to LECTURER.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'departmentId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['hodId'],
+                properties: {
+                  hodId: { type: 'string', example: '60d5ec4b868e5a2b3479428a' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'HOD assigned successfully' },
+          400: { description: 'Constraint violation (user is already HOD of another department)' },
+        },
+      },
+      delete: {
+        tags: ['SchoolAdmin'],
+        summary: 'Remove the HOD from a department (SCHOOL_ADMIN only)',
+        description: 'Clears the HOD association and demotes the user back to LECTURER.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'departmentId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'HOD removed successfully' },
         },
       },
     },
@@ -756,6 +798,14 @@ const swaggerSpec = {
       },
     },
     '/admin/hods': {
+      get: {
+        tags: ['SchoolAdmin'],
+        summary: 'Get all HODs in the school (SCHOOL_ADMIN only)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'HODs retrieved successfully' },
+        },
+      },
       post: {
         tags: ['SchoolAdmin'],
         summary: 'Create HOD account',
