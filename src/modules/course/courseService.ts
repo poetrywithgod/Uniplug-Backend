@@ -58,7 +58,7 @@ export const getDepartments = async (tenantId: string) => {
         where: {
           tenantId,
           role: 'LECTURER',
-          department: dept.name,
+          departmentId: dept.id,
         },
       });
       return {

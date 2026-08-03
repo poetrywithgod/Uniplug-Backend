@@ -8,13 +8,13 @@ import {
   getOtpExpiryDate,
 } from '../auth/authSecurity';
 import { sendStaffOnboardingEmail } from '../../utils/email';
-import { generateAdminId } from '../../utils/helpers';
+import { generateAdminId, generateStaffId } from '../../utils/helpers';
 
 interface CreateStaffPayload {
   fullName: string;
-  staffId: string;
+  staffId?: string;
   email: string;
-  department: string;
+  departmentId: string;
   password: string;
 }
 
@@ -60,6 +60,15 @@ const createStaffAccount = async (
     throw createError(404, 'Tenant not found for current school admin.');
   }
 
+  // Verify that the assigned department exists and belongs to the tenant
+  const department = await prisma.department.findFirst({
+    where: { id: payload.departmentId, tenantId: actor.tenantId },
+  });
+
+  if (!department) {
+    throw createError(404, 'The assigned department was not found.');
+  }
+
   const existingByEmail = await prisma.user.findUnique({
     where: { email: payload.email },
   });
@@ -74,8 +83,10 @@ const createStaffAccount = async (
     throw createError(409, 'A user with this email already exists.');
   }
 
+  const resolvedStaffId = payload.staffId?.trim() || generateStaffId(role, actor.schoolId);
+
   const existingByStaffId = await prisma.user.findFirst({
-    where: { staffId: payload.staffId },
+    where: { staffId: resolvedStaffId },
   });
 
   if (existingByStaffId && existingByStaffId.email !== payload.email) {
@@ -94,8 +105,8 @@ const createStaffAccount = async (
           firstName,
           lastName,
           adminId,
-          staffId: payload.staffId,
-          department: payload.department,
+          staffId: resolvedStaffId,
+          departmentId: payload.departmentId,
           role,
           schoolId: actor.schoolId,
           school: actor.school,
@@ -127,7 +138,7 @@ const createStaffAccount = async (
           school: true,
           adminId: true,
           staffId: true,
-          department: true,
+          departmentId: true,
           isVerified: true,
           approvalStatus: true,
         },
@@ -139,8 +150,8 @@ const createStaffAccount = async (
           email: payload.email,
           phoneNumber: null,
           adminId,
-          staffId: payload.staffId,
-          department: payload.department,
+          staffId: resolvedStaffId,
+          departmentId: payload.departmentId,
           schoolId: actor.schoolId,
           school: actor.school,
           tenantId: actor.tenantId,
@@ -164,7 +175,7 @@ const createStaffAccount = async (
           school: true,
           adminId: true,
           staffId: true,
-          department: true,
+          departmentId: true,
           isVerified: true,
           approvalStatus: true,
         },
@@ -178,8 +189,8 @@ const createStaffAccount = async (
     adminId,
     schoolId: tenant.schoolId,
     school: tenant.school,
-    staffId: payload.staffId,
-    department: payload.department,
+    staffId: resolvedStaffId,
+    department: department.name,
     otpCode,
   });
 
@@ -862,14 +873,7 @@ export const getLecturers = async (
   };
 
   if (departmentId) {
-    const dept = await prisma.department.findFirst({
-      where: { id: departmentId, tenantId: actor.tenantId },
-    });
-    if (dept) {
-      where.department = dept.name;
-    } else {
-      where.department = 'NON_EXISTENT_DEPARTMENT';
-    }
+    where.departmentId = departmentId;
   }
 
   // Text search on firstName, lastName, or email
@@ -896,12 +900,18 @@ export const getLecturers = async (
         role: true,
         isVerified: true,
         staffId: true,
-        department: true,
+        departmentId: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },
       orderBy: [
-        { department: 'asc' },
+        { departmentId: 'asc' },
         { firstName: 'asc' },
       ],
     }),
@@ -934,7 +944,13 @@ export const getHODs = async (tenantId: string) => {
       lastName: true,
       email: true,
       staffId: true,
-      department: true,
+      departmentId: true,
+      department: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: { firstName: 'asc' },
   });
