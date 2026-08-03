@@ -10,7 +10,12 @@ export const validateRequest = (schema: ZodTypeAny) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const message = error.issues.map((issue) => issue.message).join('. ');
+        const message = error.issues
+          .map((issue) => {
+            const path = issue.path.join('.');
+            return path ? `Field '${path}': ${issue.message}` : issue.message;
+          })
+          .join('. ');
         next(createError(400, message));
         return;
       }
@@ -35,7 +40,12 @@ export const validateQuery = (schema: ZodTypeAny) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const message = error.issues.map((issue) => issue.message).join('. ');
+        const message = error.issues
+          .map((issue) => {
+            const path = issue.path.join('.');
+            return path ? `Field '${path}': ${issue.message}` : issue.message;
+          })
+          .join('. ');
         next(createError(400, message));
         return;
       }
