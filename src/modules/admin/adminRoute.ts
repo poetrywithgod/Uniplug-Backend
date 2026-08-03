@@ -19,6 +19,9 @@ import {
   handleGetSessions,
   handleGetAdmittedStudents,
   handleGetLecturers,
+  handleGetHODs,
+  handleAssignHODToDepartment,
+  handleRemoveHODFromDepartment,
 } from './adminController';
 import { requireAuth, requireRole, ROLES } from '../../middlewares/authMiddleware';
 import { validateRequest, validateQuery } from '../../utils/validation';
@@ -33,6 +36,7 @@ import {
   createSemesterSchema,
   getAdmittedStudentsQuerySchema,
   getLecturersQuerySchema,
+  assignHODSchema,
 } from './adminSchemas';
 
 const router = express.Router();
@@ -128,5 +132,9 @@ router.post(
 );
 router.patch('/semesters/:id/activate', handleActivateSemester);
 
+// HOD Management
+router.get('/hods', handleGetHODs);
+router.patch('/departments/:departmentId/hod', validateRequest(assignHODSchema), handleAssignHODToDepartment);
+router.delete('/departments/:departmentId/hod', handleRemoveHODFromDepartment);
 
 export default router;

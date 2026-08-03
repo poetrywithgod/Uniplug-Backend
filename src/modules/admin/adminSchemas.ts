@@ -102,5 +102,10 @@ export const getLecturersQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(10),
   search: z.string().optional(),
+  departmentId: z.string().optional(),
+});
+
+export const assignHODSchema = z.object({
+  hodId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid HOD User ID format'),
 });
 
