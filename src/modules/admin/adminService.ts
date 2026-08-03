@@ -844,6 +844,7 @@ export const getLecturers = async (
     page: number;
     limit: number;
     search?: string;
+    departmentId?: string;
   },
   actor: ActorContext & { role?: string },
 ) => {
@@ -851,7 +852,7 @@ export const getLecturers = async (
     throw createError(400, 'User account is not linked to a tenant.');
   }
 
-  const { page, limit, search } = query;
+  const { page, limit, search, departmentId } = query;
   const skip = (page - 1) * limit;
 
   // Build the dynamic filter
@@ -859,6 +860,17 @@ export const getLecturers = async (
     role: 'LECTURER',
     tenantId: actor.tenantId,
   };
+
+  if (departmentId) {
+    const dept = await prisma.department.findFirst({
+      where: { id: departmentId, tenantId: actor.tenantId },
+    });
+    if (dept) {
+      where.department = dept.name;
+    } else {
+      where.department = 'NON_EXISTENT_DEPARTMENT';
+    }
+  }
 
   // Text search on firstName, lastName, or email
   const trimmedSearch = search?.trim();
@@ -906,4 +918,152 @@ export const getLecturers = async (
     },
   };
 };
+
+/**
+ * Get all HODs for the school tenant.
+ */
+export const getHODs = async (tenantId: string) => {
+  return prisma.user.findMany({
+    where: {
+      tenantId,
+      role: 'HOD',
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      staffId: true,
+      department: true,
+    },
+    orderBy: { firstName: 'asc' },
+  });
+};
+
+/**
+ * Assign/reassign a lecturer as HOD of a department.
+ */
+export const assignHODToDepartment = async (
+  departmentId: string,
+  hodId: string,
+  tenantId: string,
+) => {
+  const department = await prisma.department.findFirst({
+    where: { id: departmentId, tenantId },
+  });
+
+  if (!department) {
+    throw createError(404, 'Department not found.');
+  }
+
+  const targetUser = await prisma.user.findFirst({
+    where: {
+      id: hodId,
+      tenantId,
+      role: { in: ['LECTURER', 'HOD'] },
+    },
+  });
+
+  if (!targetUser) {
+    throw createError(404, 'Target user not found or not eligible to be HOD.');
+  }
+
+  // Enforce one HOD per department constraint: check if this user is HOD of another department
+  const existingHodDept = await prisma.department.findFirst({
+    where: {
+      hodId,
+      id: { not: departmentId },
+      tenantId,
+    },
+  });
+
+  if (existingHodDept) {
+    throw createError(
+      400,
+      `This user is already assigned as the HOD of another department (${existingHodDept.name}).`,
+    );
+  }
+
+  const previousHodId = department.hodId;
+
+  // Demote previous HOD if exists
+  if (previousHodId && previousHodId !== hodId) {
+    const otherDeptsCount = await prisma.department.count({
+      where: {
+        hodId: previousHodId,
+        id: { not: departmentId },
+        tenantId,
+      },
+    });
+    if (otherDeptsCount === 0) {
+      await prisma.user.update({
+        where: { id: previousHodId },
+        data: { role: 'LECTURER' },
+      });
+    }
+  }
+
+  // Promote new HOD user
+  await prisma.user.update({
+    where: { id: hodId },
+    data: { role: 'HOD' },
+  });
+
+  // Assign to department
+  return prisma.department.update({
+    where: { id: departmentId },
+    data: { hodId },
+    include: {
+      hod: { select: { id: true, firstName: true, lastName: true, email: true } },
+    },
+  });
+};
+
+/**
+ * Remove the HOD from a department and demote them to LECTURER.
+ */
+export const removeHODFromDepartment = async (
+  departmentId: string,
+  tenantId: string,
+) => {
+  const department = await prisma.department.findFirst({
+    where: { id: departmentId, tenantId },
+  });
+
+  if (!department) {
+    throw createError(404, 'Department not found.');
+  }
+
+  const currentHodId = department.hodId;
+
+  if (!currentHodId) {
+    return department;
+  }
+
+  // Check if they manage other departments. If not, demote to LECTURER
+  const otherDeptsCount = await prisma.department.count({
+    where: {
+      hodId: currentHodId,
+      id: { not: departmentId },
+      tenantId,
+    },
+  });
+
+  if (otherDeptsCount === 0) {
+    await prisma.user.update({
+      where: { id: currentHodId },
+      data: { role: 'LECTURER' },
+    });
+  }
+
+  // Remove from department
+  return prisma.department.update({
+    where: { id: departmentId },
+    data: { hodId: null },
+    include: {
+      hod: { select: { id: true, firstName: true, lastName: true, email: true } },
+    },
+  });
+};
+
 

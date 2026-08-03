@@ -51,7 +51,24 @@ export const getDepartments = async (tenantId: string) => {
       faculty: { select: { id: true, name: true, code: true } },
     },
   });
-  return { departments };
+
+  const departmentsWithCounts = await Promise.all(
+    departments.map(async (dept) => {
+      const lecturerCount = await prisma.user.count({
+        where: {
+          tenantId,
+          role: 'LECTURER',
+          department: dept.name,
+        },
+      });
+      return {
+        ...dept,
+        totalLecturers: lecturerCount,
+      };
+    })
+  );
+
+  return { departments: departmentsWithCounts };
 };
 
 // --- Faculties ---
