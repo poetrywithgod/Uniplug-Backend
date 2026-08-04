@@ -136,7 +136,8 @@ model User {
   adminId             String?             @unique
   phoneNumber         String?
   staffId             String?
-  department          String?
+  departmentId        String?             @db.ObjectId
+  department          Department?         @relation("DepartmentStaff", fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   school              String?
   schoolId            String?
   tenantId            String?             @db.ObjectId
@@ -262,7 +263,7 @@ model Department {
   id        String      @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   hodId     String?     @db.ObjectId
-  hod       User?       @relation("DepartmentHOD", fields: [hodId], references: [id])
+  hod       User?       @relation("DepartmentHOD", fields: [hodId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   facultyId String?     @db.ObjectId
   faculty   Faculty?    @relation(fields: [facultyId], references: [id])
   tenantId  String      @db.ObjectId
@@ -271,6 +272,7 @@ model Department {
   updatedAt DateTime    @updatedAt
   courses   Course[]
   programmes Programme[]
+  staff     User[]      @relation("DepartmentStaff")
 
   @@index([tenantId])
   @@index([facultyId])
