@@ -657,9 +657,8 @@ const swaggerSpec = {
                 type: 'object',
                 required: [
                   'fullName',
-                  'staffId',
                   'email',
-                  'department',
+                  'departmentId',
                   'password',
                 ],
                 properties: {
@@ -670,7 +669,7 @@ const swaggerSpec = {
                     format: 'email',
                     example: 'samuel@uniplug.com',
                   },
-                  department: { type: 'string', example: 'Computer Science' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
@@ -770,20 +769,19 @@ const swaggerSpec = {
                 type: 'object',
                 required: [
                   'fullName',
-                  'staffId',
                   'email',
-                  'department',
+                  'departmentId',
                   'password',
                 ],
                 properties: {
-                  fullName: { type: 'string', example: 'Amaka Eze' },
+                  fullName: { type: 'string', example: 'Amaka Obi' },
                   staffId: { type: 'string', example: 'H-1002' },
                   email: {
                     type: 'string',
                     format: 'email',
                     example: 'amaka@uniplug.com',
                   },
-                  department: { type: 'string', example: 'Hostel Operations' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
@@ -818,9 +816,8 @@ const swaggerSpec = {
                 type: 'object',
                 required: [
                   'fullName',
-                  'staffId',
                   'email',
-                  'department',
+                  'departmentId',
                   'password',
                 ],
                 properties: {
@@ -831,7 +828,7 @@ const swaggerSpec = {
                     format: 'email',
                     example: 'johndoe@uniplug.com',
                   },
-                  department: { type: 'string', example: 'Chemistry' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
@@ -858,9 +855,8 @@ const swaggerSpec = {
                 type: 'object',
                 required: [
                   'fullName',
-                  'staffId',
                   'email',
-                  'department',
+                  'departmentId',
                   'password',
                 ],
                 properties: {
@@ -871,7 +867,7 @@ const swaggerSpec = {
                     format: 'email',
                     example: 'chidi@uniplug.com',
                   },
-                  department: { type: 'string', example: 'Registry' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
@@ -898,9 +894,8 @@ const swaggerSpec = {
                 type: 'object',
                 required: [
                   'fullName',
-                  'staffId',
                   'email',
-                  'department',
+                  'departmentId',
                   'password',
                 ],
                 properties: {
@@ -911,7 +906,7 @@ const swaggerSpec = {
                     format: 'email',
                     example: 'fatima@uniplug.com',
                   },
-                  department: { type: 'string', example: 'Exams and Records' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
@@ -938,9 +933,8 @@ const swaggerSpec = {
                 type: 'object',
                 required: [
                   'fullName',
-                  'staffId',
                   'email',
-                  'department',
+                  'departmentId',
                   'password',
                 ],
                 properties: {
@@ -951,7 +945,7 @@ const swaggerSpec = {
                     format: 'email',
                     example: 'tunde@uniplug.com',
                   },
-                  department: { type: 'string', example: 'Bursary' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
@@ -978,9 +972,8 @@ const swaggerSpec = {
                 type: 'object',
                 required: [
                   'fullName',
-                  'staffId',
                   'email',
-                  'department',
+                  'departmentId',
                   'password',
                 ],
                 properties: {
@@ -991,7 +984,7 @@ const swaggerSpec = {
                     format: 'email',
                     example: 'mercy@uniplug.com',
                   },
-                  department: { type: 'string', example: 'Hostel Services' },
+                  departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427d' },
                   password: { type: 'string', example: 'Secure123' },
                 },
               },
