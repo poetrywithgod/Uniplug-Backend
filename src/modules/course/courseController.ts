@@ -441,3 +441,18 @@ export const handleGetStudentProgrammeEnrollments = catchAsync(
     });
   }
 );
+
+// Used by the student router - resolves to the logged-in student's own programme enrollments
+export const handleGetMyProgrammeEnrollments = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const result = await courseService.getStudentProgrammeEnrollments(user.id, user.tenantId);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
