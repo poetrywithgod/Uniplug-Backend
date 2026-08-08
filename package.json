@@ -9,7 +9,6 @@
     "prod": "npm run build && cross-env NODE_ENV=prod npm start",
     "dev": "npm run generate && nodemon --watch src -e ts --exec ts-node src/server.ts",
     "lint": "eslint src/**/*.ts",
-    "seed:super-admin": "npx tsx src/scripts/seedSuperAdmin.ts",
     "migrate:deploy": "npx prisma@6.19 migrate deploy",
     "migrate:dev": "npx prisma@6.19 migrate dev --name $(date +%Y%m%d_%H%M%S)",
     "studio": "npx prisma@6.19 studio",
