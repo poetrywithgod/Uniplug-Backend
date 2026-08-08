@@ -81,8 +81,66 @@ router.post(
 );
 router.get(
   '/course-offerings',
-  requireRole(ROLES.HOD, ROLES.LECTURER, ROLES.STUDENT),
+  requireRole(ROLES.HOD, ROLES.LECTURER, ROLES.STUDENT, ROLES.SCHOOL_ADMIN),
   controller.handleGetCourseOfferings
+);
+
+// --- Lecturer Course Offerings & Dashboard ---
+router.get(
+  '/lecturer/my-courses',
+  requireRole(ROLES.LECTURER),
+  controller.handleGetLecturerCourses
+);
+
+// --- Course Schedule (Lecturer) ---
+router.post(
+  '/course-offerings/:courseOfferingId/schedule',
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.setCourseScheduleSchema),
+  controller.handleSetSchedule
+);
+router.put(
+  '/course-offerings/:courseOfferingId/schedule',
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.setCourseScheduleSchema),
+  controller.handleSetSchedule
+);
+router.delete(
+  '/course-offerings/:courseOfferingId/schedule',
+  requireRole(ROLES.LECTURER),
+  controller.handleDeleteSchedule
+);
+
+// --- Course Syllabus (Lecturer) ---
+router.post(
+  '/course-offerings/:courseOfferingId/syllabus',
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.setCourseSyllabusSchema),
+  controller.handleSetSyllabus
+);
+router.put(
+  '/course-offerings/:courseOfferingId/syllabus',
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.setCourseSyllabusSchema),
+  controller.handleSetSyllabus
+);
+router.delete(
+  '/course-offerings/:courseOfferingId/syllabus',
+  requireRole(ROLES.LECTURER),
+  controller.handleDeleteSyllabus
+);
+
+// --- Course Materials (Lecturer) ---
+router.post(
+  '/course-offerings/:courseOfferingId/materials',
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.addCourseMaterialsSchema),
+  controller.handleAddMaterials
+);
+router.delete(
+  '/course-offerings/:courseOfferingId/materials/:materialId',
+  requireRole(ROLES.LECTURER),
+  controller.handleDeleteMaterial
 );
 
 // --- Lecturer Assignments ---
@@ -117,7 +175,7 @@ router.get(
   controller.handleGetStudentEnrollments
 );
 
-// --- Lecturer Grading & Roster ---
+// --- Lecturer Grading & Student Roster ---
 router.get(
   '/course-offerings/:courseOfferingId/students',
   requireRole(ROLES.LECTURER, ROLES.HOD, ROLES.SCHOOL_ADMIN),
