@@ -2,6 +2,16 @@ import createError from 'http-errors';
 import prisma from '../../configs/prismaConfig';
 import { CourseCategory, AssignmentStatus, LecturerRole, EnrollmentStatus } from '../../../generated/prisma';
 
+// Helper to compute standard Nigerian tertiary letter grades
+export const calculateLetterGrade = (score: number): string => {
+  if (score >= 70) return 'A';
+  if (score >= 60) return 'B';
+  if (score >= 50) return 'C';
+  if (score >= 45) return 'D';
+  if (score >= 40) return 'E';
+  return 'F';
+};
+
 // --- Departments ---
 /**
  * Create a new Department under a specific school tenant.
@@ -115,7 +125,6 @@ export const getFaculties = async (tenantId: string) => {
   });
   return { faculties };
 };
-
 
 // --- Courses ---
 /**
@@ -269,6 +278,367 @@ export const getCourseOfferings = async (tenantId: string) => {
     include: { course: true },
   });
   return { offerings };
+};
+
+// --- Lecturer Course Offerings & Dashboard ---
+/**
+ * Retrieve all course offerings assigned to a specific lecturer,
+ * complete with enrolled student counts, grading progress %, schedule, and materials.
+ */
+export const getLecturerCourses = async (lecturerId: string, tenantId: string) => {
+  const assignments = await prisma.courseAssignment.findMany({
+    where: {
+      lecturerId,
+      status: 'APPROVED',
+      tenantId,
+    },
+    include: {
+      courseOffering: {
+        include: {
+          course: {
+            include: {
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  faculty: { select: { id: true, name: true, code: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const coursesWithDetails = await Promise.all(
+    assignments.map(async (assignment) => {
+      const offering = assignment.courseOffering;
+
+      // Count total enrolled students
+      const totalStudents = await prisma.courseEnrollment.count({
+        where: {
+          courseOfferingId: offering.id,
+          status: 'ENROLLED',
+          tenantId,
+        },
+      });
+
+      // Count graded students
+      const gradedStudents = await prisma.grade.count({
+        where: {
+          courseOfferingId: offering.id,
+          tenantId,
+        },
+      });
+
+      const gradingProgress =
+        totalStudents > 0 ? Math.round((gradedStudents / totalStudents) * 100) : 0;
+
+      return {
+        assignmentId: assignment.id,
+        lecturerRole: assignment.role,
+        courseOfferingId: offering.id,
+        academicSession: offering.academicSession,
+        semester: offering.semester,
+        status: offering.status,
+        schedule: offering.schedule || null,
+        syllabus: offering.syllabus || null,
+        materialsCount: offering.materials?.length || 0,
+        materials: offering.materials || [],
+        totalStudents,
+        gradedStudents,
+        gradingProgress, // e.g. 60
+        course: {
+          id: offering.course.id,
+          courseCode: offering.course.courseCode,
+          courseName: offering.course.courseName,
+          creditUnits: offering.course.creditUnits,
+          level: offering.course.level,
+          category: offering.course.category,
+          description: offering.course.description,
+          department: offering.course.department,
+        },
+      };
+    })
+  );
+
+  return { courses: coursesWithDetails };
+};
+
+// --- Course Schedule ---
+/**
+ * Set or update the schedule (venue, day, time) for a course offering.
+ */
+export const setCourseSchedule = async (
+  courseOfferingId: string,
+  payload: { venue: string; day: string; time: string },
+  lecturerId: string,
+  tenantId: string
+) => {
+  // Validate lecturer assignment
+  const assignment = await prisma.courseAssignment.findFirst({
+    where: {
+      courseOfferingId,
+      lecturerId,
+      status: 'APPROVED',
+      tenantId,
+    },
+  });
+
+  if (!assignment) {
+    throw createError(403, 'You are not assigned to this course offering.');
+  }
+
+  const updatedOffering = await prisma.courseOffering.update({
+    where: { id: courseOfferingId },
+    data: {
+      schedule: {
+        set: {
+          venue: payload.venue,
+          day: payload.day,
+          time: payload.time,
+          updatedAt: new Date(),
+        },
+      },
+    },
+    include: { course: true },
+  });
+
+  return {
+    message: 'Course schedule updated successfully.',
+    schedule: updatedOffering.schedule,
+  };
+};
+
+/**
+ * Delete / remove the schedule from a course offering.
+ */
+export const deleteCourseSchedule = async (
+  courseOfferingId: string,
+  lecturerId: string,
+  tenantId: string
+) => {
+  const assignment = await prisma.courseAssignment.findFirst({
+    where: {
+      courseOfferingId,
+      lecturerId,
+      status: 'APPROVED',
+      tenantId,
+    },
+  });
+
+  if (!assignment) {
+    throw createError(403, 'You are not assigned to this course offering.');
+  }
+
+  await prisma.courseOffering.update({
+    where: { id: courseOfferingId },
+    data: {
+      schedule: {
+        unset: true,
+      },
+    },
+  });
+
+  return {
+    message: 'Course schedule deleted successfully.',
+  };
+};
+
+// --- Course Syllabus ---
+/**
+ * Set or update the syllabus details & attached document URL for a course offering.
+ */
+export const setCourseSyllabus = async (
+  courseOfferingId: string,
+  payload: { title?: string; description?: string; fileUrl?: string; fileName?: string },
+  lecturerId: string,
+  tenantId: string
+) => {
+  const assignment = await prisma.courseAssignment.findFirst({
+    where: {
+      courseOfferingId,
+      lecturerId,
+      status: 'APPROVED',
+      tenantId,
+    },
+  });
+
+  if (!assignment) {
+    throw createError(403, 'You are not assigned to this course offering.');
+  }
+
+  const updatedOffering = await prisma.courseOffering.update({
+    where: { id: courseOfferingId },
+    data: {
+      syllabus: {
+        set: {
+          title: payload.title || null,
+          description: payload.description || null,
+          fileUrl: payload.fileUrl || null,
+          fileName: payload.fileName || null,
+          uploadedAt: new Date(),
+        },
+      },
+    },
+  });
+
+  return {
+    message: 'Course syllabus updated successfully.',
+    syllabus: updatedOffering.syllabus,
+  };
+};
+
+/**
+ * Delete / remove the syllabus from a course offering.
+ */
+export const deleteCourseSyllabus = async (
+  courseOfferingId: string,
+  lecturerId: string,
+  tenantId: string
+) => {
+  const assignment = await prisma.courseAssignment.findFirst({
+    where: {
+      courseOfferingId,
+      lecturerId,
+      status: 'APPROVED',
+      tenantId,
+    },
+  });
+
+  if (!assignment) {
+    throw createError(403, 'You are not assigned to this course offering.');
+  }
+
+  await prisma.courseOffering.update({
+    where: { id: courseOfferingId },
+    data: {
+      syllabus: {
+        unset: true,
+      },
+    },
+  });
+
+  return {
+    message: 'Course syllabus deleted successfully.',
+  };
+};
+
+// --- Course Materials ---
+/**
+ * Add 1 or more materials (PDFs, images, slides, documents) to a course offering.
+ */
+export const addCourseMaterials = async (
+  courseOfferingId: string,
+  payload: {
+    materials: {
+      title: string;
+      fileUrl: string;
+      fileType: string;
+      fileSize?: number;
+    }[];
+  },
+  lecturerId: string,
+  tenantId: string
+) => {
+  const assignment = await prisma.courseAssignment.findFirst({
+    where: {
+      courseOfferingId,
+      lecturerId,
+      status: 'APPROVED',
+      tenantId,
+    },
+  });
+
+  if (!assignment) {
+    throw createError(403, 'You are not assigned to this course offering.');
+  }
+
+  const offering = await prisma.courseOffering.findUnique({
+    where: { id: courseOfferingId },
+  });
+
+  if (!offering) {
+    throw createError(404, 'Course offering not found.');
+  }
+
+  const currentMaterials = offering.materials || [];
+  const newMaterials = payload.materials.map((m) => ({
+    id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    title: m.title,
+    fileUrl: m.fileUrl,
+    fileType: m.fileType,
+    fileSize: m.fileSize || null,
+    uploadedAt: new Date(),
+  }));
+
+  const updatedOffering = await prisma.courseOffering.update({
+    where: { id: courseOfferingId },
+    data: {
+      materials: {
+        set: [...currentMaterials, ...newMaterials],
+      },
+    },
+  });
+
+  return {
+    message: `${newMaterials.length} material(s) added successfully.`,
+    materials: updatedOffering.materials,
+  };
+};
+
+/**
+ * Delete an individual material from a course offering.
+ */
+export const deleteCourseMaterial = async (
+  courseOfferingId: string,
+  materialId: string,
+  lecturerId: string,
+  tenantId: string
+) => {
+  const assignment = await prisma.courseAssignment.findFirst({
+    where: {
+      courseOfferingId,
+      lecturerId,
+      status: 'APPROVED',
+      tenantId,
+    },
+  });
+
+  if (!assignment) {
+    throw createError(403, 'You are not assigned to this course offering.');
+  }
+
+  const offering = await prisma.courseOffering.findUnique({
+    where: { id: courseOfferingId },
+  });
+
+  if (!offering) {
+    throw createError(404, 'Course offering not found.');
+  }
+
+  const currentMaterials = offering.materials || [];
+  const filtered = currentMaterials.filter((m) => m.id !== materialId);
+
+  if (filtered.length === currentMaterials.length) {
+    throw createError(404, 'Material not found on this course offering.');
+  }
+
+  const updatedOffering = await prisma.courseOffering.update({
+    where: { id: courseOfferingId },
+    data: {
+      materials: {
+        set: filtered,
+      },
+    },
+  });
+
+  return {
+    message: 'Material deleted successfully.',
+    materials: updatedOffering.materials,
+  };
 };
 
 // --- Lecturer Assignments ---
@@ -433,7 +803,8 @@ export const getStudentEnrollments = async (studentId: string, tenantId: string)
 
 // --- Lecturer Grading & Roster ---
 /**
- * Fetch students enrolled in a course offering (the student roster), including grades.
+ * Fetch students enrolled in a course offering (the student roster), including matriculation number,
+ * CA score (30), Exam score (70), total score, letter grade, and remarks.
  */
 export const getEnrolledStudents = async (
   courseOfferingId: string,
@@ -441,7 +812,7 @@ export const getEnrolledStudents = async (
   userRole: string,
   tenantId: string
 ) => {
-  // Authorization: Must be HOD, or the assigned lecturer for this offering
+  // Authorization: Must be HOD, School Admin, or the assigned lecturer for this offering
   if (userRole === 'LECTURER') {
     const isAssigned = await prisma.courseAssignment.findFirst({
       where: {
@@ -458,6 +829,14 @@ export const getEnrolledStudents = async (
     throw createError(403, 'Unauthorized access.');
   }
 
+  const offering = await prisma.courseOffering.findFirst({
+    where: { id: courseOfferingId, tenantId },
+    include: { course: true },
+  });
+  if (!offering) {
+    throw createError(404, 'Course offering not found.');
+  }
+
   const enrollments = await prisma.courseEnrollment.findMany({
     where: { courseOfferingId, status: 'ENROLLED', tenantId },
     include: {
@@ -468,41 +847,75 @@ export const getEnrolledStudents = async (
           lastName: true,
           email: true,
           level: true,
-        },
-      },
-      courseOffering: {
-        include: {
-          grades: {
-            where: { studentId: { in: [] } }, // placeholder, we will get grade separately
-          },
+          staffId: true,
+          adminId: true,
         },
       },
     },
+    orderBy: { student: { lastName: 'asc' } },
   });
 
-  // Map students and attach grades
+  // Map students and attach detailed grades matching the UI table
   const studentsRoster = await Promise.all(
     enrollments.map(async (e) => {
       const grade = await prisma.grade.findFirst({
         where: { studentId: e.studentId, courseOfferingId, tenantId },
-        select: { score: true, updatedAt: true },
       });
+
+      const matricNo = e.student.staffId || e.student.adminId || `STU-${e.student.id.substring(18)}`;
+      const caScore = grade?.caScore ?? null;
+      const examScore = grade?.examScore ?? null;
+      const totalScore = grade?.score ?? null;
+      const letterGrade = grade?.letterGrade ?? (totalScore !== null ? calculateLetterGrade(totalScore) : null);
+      const remarks = grade?.remarks ?? null;
+
       return {
-        ...e.student,
-        grade: grade ? grade.score : null,
+        studentId: e.student.id,
+        matricNo,
+        name: `${e.student.firstName} ${e.student.lastName}`.trim(),
+        firstName: e.student.firstName,
+        lastName: e.student.lastName,
+        email: e.student.email,
+        level: e.student.level,
+        caScore,     // e.g. 28 / 30
+        examScore,   // e.g. 60 / 70
+        totalScore,  // e.g. 88
+        grade: letterGrade, // e.g. "A"
+        remarks,     // e.g. "Excellent work"
+        updatedAt: grade?.updatedAt || null,
       };
     })
   );
 
-  return { students: studentsRoster };
+  return {
+    course: {
+      id: offering.course.id,
+      courseCode: offering.course.courseCode,
+      courseName: offering.course.courseName,
+      creditUnits: offering.course.creditUnits,
+      level: offering.course.level,
+      semester: offering.semester,
+      academicSession: offering.academicSession,
+    },
+    totalStudents: studentsRoster.length,
+    students: studentsRoster,
+  };
 };
 
 /**
- * Record or update grading scores submitted by an assigned lecturer.
+ * Record or update grading scores (CA, Exam, total score, letter grade, remarks) submitted by an assigned lecturer.
  */
 export const submitGrades = async (
   courseOfferingId: string,
-  payload: { grades: { studentId: string; score: number }[] },
+  payload: {
+    grades: {
+      studentId: string;
+      caScore?: number;
+      examScore?: number;
+      score?: number;
+      remarks?: string;
+    }[];
+  },
   gradedById: string,
   tenantId: string
 ) => {
@@ -521,13 +934,18 @@ export const submitGrades = async (
 
   const results = [];
   for (const gradeItem of payload.grades) {
-    // Verify enrollment
+    // Verify student is enrolled
     const isEnrolled = await prisma.courseEnrollment.findFirst({
       where: { studentId: gradeItem.studentId, courseOfferingId, status: 'ENROLLED', tenantId },
     });
     if (!isEnrolled) {
       throw createError(400, `Student ${gradeItem.studentId} is not enrolled in this course offering.`);
     }
+
+    const ca = gradeItem.caScore ?? 0;
+    const exam = gradeItem.examScore ?? 0;
+    const total = gradeItem.score !== undefined ? gradeItem.score : ca + exam;
+    const letterGrade = calculateLetterGrade(total);
 
     // Upsert grade
     const existingGrade = await prisma.grade.findFirst({
@@ -539,7 +957,11 @@ export const submitGrades = async (
       grade = await prisma.grade.update({
         where: { id: existingGrade.id },
         data: {
-          score: gradeItem.score,
+          caScore: ca,
+          examScore: exam,
+          score: total,
+          letterGrade,
+          remarks: gradeItem.remarks || null,
           gradedById,
         },
       });
@@ -548,7 +970,11 @@ export const submitGrades = async (
         data: {
           studentId: gradeItem.studentId,
           courseOfferingId,
-          score: gradeItem.score,
+          caScore: ca,
+          examScore: exam,
+          score: total,
+          letterGrade,
+          remarks: gradeItem.remarks || null,
           gradedById,
           tenantId,
         },
@@ -557,9 +983,13 @@ export const submitGrades = async (
     results.push(grade);
   }
 
-  return { grades: results };
+  return {
+    message: `Grades recorded successfully for ${results.length} student(s).`,
+    grades: results,
+  };
 };
 
+// --- Programmes ---
 /**
  * Create a new academic programme definition in a department.
  */
@@ -689,5 +1119,3 @@ export const getStudentProgrammeEnrollments = async (studentId: string, tenantId
   });
   return { enrollments };
 };
-
-
