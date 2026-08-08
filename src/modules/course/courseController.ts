@@ -59,7 +59,6 @@ export const handleGetFaculties = catchAsync(
   }
 );
 
-
 export const handleCreateCourse = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;
@@ -120,6 +119,144 @@ export const handleGetCourseOfferings = catchAsync(
   }
 );
 
+// --- Lecturer Course Offerings & Dashboard ---
+export const handleGetLecturerCourses = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const result = await courseService.getLecturerCourses(user.id, user.tenantId);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+// --- Course Schedule ---
+export const handleSetSchedule = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = req.params.courseOfferingId as string;
+    const result = await courseService.setCourseSchedule(
+      courseOfferingId,
+      req.body,
+      user.id,
+      user.tenantId
+    );
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleDeleteSchedule = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = req.params.courseOfferingId as string;
+    const result = await courseService.deleteCourseSchedule(
+      courseOfferingId,
+      user.id,
+      user.tenantId
+    );
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+// --- Course Syllabus ---
+export const handleSetSyllabus = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = req.params.courseOfferingId as string;
+    const result = await courseService.setCourseSyllabus(
+      courseOfferingId,
+      req.body,
+      user.id,
+      user.tenantId
+    );
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleDeleteSyllabus = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = req.params.courseOfferingId as string;
+    const result = await courseService.deleteCourseSyllabus(
+      courseOfferingId,
+      user.id,
+      user.tenantId
+    );
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+// --- Course Materials ---
+export const handleAddMaterials = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = req.params.courseOfferingId as string;
+    const result = await courseService.addCourseMaterials(
+      courseOfferingId,
+      req.body,
+      user.id,
+      user.tenantId
+    );
+    res.status(201).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleDeleteMaterial = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = req.params.courseOfferingId as string;
+    const materialId = req.params.materialId as string;
+    const result = await courseService.deleteCourseMaterial(
+      courseOfferingId,
+      materialId,
+      user.id,
+      user.tenantId
+    );
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+// --- Course Assignments ---
 export const handleRequestCourseAssignment = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;
@@ -168,6 +305,7 @@ export const handleGetPendingAssignments = catchAsync(
   }
 );
 
+// --- Student Enrollments ---
 export const handleRegisterCourseEnrollments = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;
@@ -196,6 +334,7 @@ export const handleGetStudentEnrollments = catchAsync(
   }
 );
 
+// --- Lecturer Grading & Student Roster ---
 export const handleGetEnrolledStudents = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;
@@ -236,6 +375,7 @@ export const handleSubmitGrades = catchAsync(
   }
 );
 
+// --- Programmes ---
 export const handleCreateProgramme = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;
@@ -253,7 +393,6 @@ export const handleCreateProgramme = catchAsync(
 export const handleGetProgrammes = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;
-    // Permit reading programmes even if tenantId is fetched from query for applicants
     const tenantId = user?.tenantId || (req.query.schoolId as string);
     if (!tenantId) {
       throw createError(400, 'Tenant context or schoolId is missing.');
@@ -291,7 +430,6 @@ export const handleGetStudentProgrammeEnrollments = catchAsync(
       ? req.params.studentId[0]
       : (req.params.studentId as string);
 
-    // Enforce that only School Admin, HOD, or the student themselves can read
     if (user.role === 'STUDENT' && user.id !== studentId) {
       throw createError(403, 'You do not have permission to view other students enrollments.');
     }
@@ -303,5 +441,3 @@ export const handleGetStudentProgrammeEnrollments = catchAsync(
     });
   }
 );
-
-
