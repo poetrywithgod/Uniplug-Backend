@@ -8,7 +8,10 @@ import metaRoutes from './modules/meta/metaRoute';
 import superAdminRoutes from './modules/superAdmin/superAdminRoute';
 import applicationRoutes from './modules/application/applicationRoute';
 import hostelRoutes from './modules/hostel/hostelRoute';
-import courseRoutes from './modules/course/courseRoute';
+import academicRoutes from './modules/course/academicRoute';
+import coursesRoutes from './modules/course/coursesRoute';
+import lecturerRoutes from './modules/course/lecturerRoute';
+import studentRoutes from './modules/course/studentRoute';
 import mediaRoutes from './modules/media/mediaRoute';
 import catchAll404Errors from './middlewares/catchAll404Errors';
 import globalErrorHandler from './middlewares/errorHandler';
@@ -62,7 +65,10 @@ app.use('/api/v1/meta', metaRoutes);
 app.use('/api/v1/application', applicationRoutes);
 app.use('/api/v1/hostels', hostelRoutes);
 app.use('/api/v1/media', mediaRoutes);
-app.use('/api/v1', courseRoutes);
+app.use('/api/v1/academic', academicRoutes);
+app.use('/api/v1/courses', coursesRoutes);
+app.use('/api/v1/lecturer', lecturerRoutes);
+app.use('/api/v1/student', studentRoutes);
 
 app.get('/debug-sentry', (req, res) => {
   throw new Error('My first Sentry error!');
