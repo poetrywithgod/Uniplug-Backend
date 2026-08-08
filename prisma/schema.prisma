@@ -387,6 +387,30 @@ model Course {
   @@index([departmentId])
 }
 
+type CourseSchedule {
+  venue     String
+  day       String
+  time      String
+  updatedAt DateTime @default(now())
+}
+
+type CourseSyllabus {
+  title       String?
+  description String?
+  fileUrl     String?
+  fileName    String?
+  uploadedAt  DateTime @default(now())
+}
+
+type CourseMaterial {
+  id         String   @default(cuid())
+  title      String
+  fileUrl    String
+  fileType   String
+  fileSize   Int?
+  uploadedAt DateTime @default(now())
+}
+
 model CourseOffering {
   id              String             @id @default(auto()) @map("_id") @db.ObjectId
   courseId        String             @db.ObjectId
@@ -396,6 +420,9 @@ model CourseOffering {
   status          String             @default("ACTIVE")
   tenantId        String             @db.ObjectId
   tenant          Tenant             @relation(fields: [tenantId], references: [id])
+  schedule        CourseSchedule?
+  syllabus        CourseSyllabus?
+  materials       CourseMaterial[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   assignments     CourseAssignment[]
@@ -468,7 +495,11 @@ model Grade {
   student          User           @relation("StudentGrades", fields: [studentId], references: [id])
   courseOfferingId String         @db.ObjectId
   courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [id])
-  score            Float
+  caScore          Float?         @default(0)
+  examScore        Float?         @default(0)
+  score            Float          // Total score: caScore + examScore
+  letterGrade      String?
+  remarks          String?
   gradedById       String         @db.ObjectId
   gradedBy         User           @relation("GradedByLecturer", fields: [gradedById], references: [id])
   tenantId         String         @db.ObjectId
@@ -476,6 +507,7 @@ model Grade {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  @@unique([studentId, courseOfferingId])
   @@index([tenantId])
   @@index([studentId])
   @@index([courseOfferingId])
