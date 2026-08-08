@@ -11,7 +11,6 @@ export const createFacultySchema = z.object({
   code: z.string().min(2, 'Faculty code must be at least 2 characters').max(20),
 });
 
-
 export const createCourseSchema = z.object({
   courseName: z.string().min(2, 'Course name must be at least 2 characters').max(120),
   courseCode: z.string().min(2, 'Course code must be at least 2 characters').max(20),
@@ -30,7 +29,7 @@ export const createCourseOfferingSchema = z.object({
 
 export const createCourseAssignmentSchema = z.object({
   courseOfferingId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Offering ID format'),
-  lecturerId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Lecturer ID format'),
+  lecturerId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Lecturer ID format').optional(),
   role: z.enum(['LEAD_LECTURER', 'CO_LECTURER', 'TA']).optional(),
 });
 
@@ -42,13 +41,52 @@ export const registerCourseEnrollmentSchema = z.object({
   courseOfferingIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Offering ID format')).min(1, 'Select at least one course to register'),
 });
 
+export const setCourseScheduleSchema = z.object({
+  venue: z.string().min(2, 'Venue must be at least 2 characters').max(100),
+  day: z.enum([
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ]),
+  time: z.string().min(2, 'Time is required').max(50), // e.g. "1:30pm - 2:30pm" or "10:00 AM"
+});
+
+export const setCourseSyllabusSchema = z.object({
+  title: z.string().max(150).optional(),
+  description: z.string().max(2000).optional(),
+  fileUrl: z.string().url('Invalid syllabus document URL').optional(),
+  fileName: z.string().max(200).optional(),
+});
+
+export const addCourseMaterialsSchema = z.object({
+  materials: z
+    .array(
+      z.object({
+        title: z.string().min(1, 'Material title is required').max(150),
+        fileUrl: z.string().url('Invalid material file URL'),
+        fileType: z.string().min(1, 'File type is required').max(50), // e.g. "PDF", "IMAGE", "SLIDES"
+        fileSize: z.number().int().positive().optional(),
+      })
+    )
+    .min(1, 'At least one material must be provided'),
+});
+
 export const submitGradesSchema = z.object({
-  grades: z.array(
-    z.object({
-      studentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Student ID format'),
-      score: z.number().min(0).max(100),
-    })
-  ).min(1, 'At least one student grade is required'),
+  grades: z
+    .array(
+      z.object({
+        studentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Student ID format'),
+        caScore: z.number().min(0).max(30).optional(),
+        examScore: z.number().min(0).max(70).optional(),
+        score: z.number().min(0).max(100).optional(),
+        remarks: z.string().max(200).optional(),
+      })
+    )
+    .min(1, 'At least one student grade is required'),
 });
 
 export const createProgrammeSchema = z.object({
@@ -67,5 +105,3 @@ export const createProgrammeEnrollmentSchema = z.object({
   currentLevel: z.string().min(2, 'Current level is required'),
   admissionPathway: z.enum(['UNDERGRADUATE', 'DIRECT_ENTRY', 'PART_TIME', 'POSTGRADUATE']),
 });
-
-
