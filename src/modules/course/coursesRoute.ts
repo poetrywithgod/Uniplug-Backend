@@ -23,15 +23,86 @@ router.get(
 
 // --- Course Offerings ---
 router.post(
-  '/offerings',
+  ['/offerings', '/course-offerings'],
   requireRole(ROLES.HOD),
   validateRequest(schemas.createCourseOfferingSchema),
   controller.handleCreateCourseOffering,
 );
 router.get(
-  '/offerings',
+  ['/offerings', '/course-offerings'],
   requireRole(ROLES.HOD, ROLES.LECTURER, ROLES.STUDENT, ROLES.SCHOOL_ADMIN),
   controller.handleGetCourseOfferings,
+);
+
+// --- Course Offering Schedule (Lecturer) ---
+router.post(
+  ['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'],
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.setCourseScheduleSchema),
+  controller.handleSetSchedule,
+);
+router.put(
+  ['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'],
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.setCourseScheduleSchema),
+  controller.handleSetSchedule,
+);
+router.delete(
+  ['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'],
+  requireRole(ROLES.LECTURER),
+  controller.handleDeleteSchedule,
+);
+
+// --- Course Offering Syllabus (Lecturer) ---
+router.post(
+  ['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'],
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.setCourseSyllabusSchema),
+  controller.handleSetSyllabus,
+);
+router.put(
+  ['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'],
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.setCourseSyllabusSchema),
+  controller.handleSetSyllabus,
+);
+router.delete(
+  ['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'],
+  requireRole(ROLES.LECTURER),
+  controller.handleDeleteSyllabus,
+);
+
+// --- Course Offering Materials (Lecturer) ---
+router.post(
+  ['/offerings/:courseOfferingId/materials', '/course-offerings/:courseOfferingId/materials'],
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.addCourseMaterialsSchema),
+  controller.handleAddMaterials,
+);
+router.delete(
+  ['/offerings/:courseOfferingId/materials/:materialId', '/course-offerings/:courseOfferingId/materials/:materialId'],
+  requireRole(ROLES.LECTURER),
+  controller.handleDeleteMaterial,
+);
+
+// --- Course Offering Students & Grades ---
+router.get(
+  ['/offerings/:courseOfferingId/students', '/course-offerings/:courseOfferingId/students'],
+  requireRole(ROLES.LECTURER, ROLES.HOD, ROLES.SCHOOL_ADMIN),
+  controller.handleGetEnrolledStudents,
+);
+router.post(
+  ['/offerings/:courseOfferingId/grades', '/course-offerings/:courseOfferingId/grades'],
+  requireRole(ROLES.LECTURER),
+  validateRequest(schemas.submitGradesSchema),
+  controller.handleSubmitGrades,
+);
+
+// --- Lecturer Course Offerings & Dashboard ---
+router.get(
+  '/lecturer/my-courses',
+  requireRole(ROLES.LECTURER),
+  controller.handleGetLecturerCourses,
 );
 
 // --- Course Assignments (Lecturer <-> HOD) ---
