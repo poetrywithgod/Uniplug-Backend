@@ -14,56 +14,46 @@ router.use(requireRole(ROLES.LECTURER));
 router.get('/my-courses', controller.handleGetLecturerCourses);
 
 // --- Schedule ---
-// POST   /api/v1/lecturer/offerings/:courseOfferingId/schedule
-// PUT    /api/v1/lecturer/offerings/:courseOfferingId/schedule
-// DELETE /api/v1/lecturer/offerings/:courseOfferingId/schedule
 router.post(
-  '/offerings/:courseOfferingId/schedule',
+  ['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'],
   validateRequest(schemas.setCourseScheduleSchema),
   controller.handleSetSchedule,
 );
 router.put(
-  '/offerings/:courseOfferingId/schedule',
+  ['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'],
   validateRequest(schemas.setCourseScheduleSchema),
   controller.handleSetSchedule,
 );
-router.delete('/offerings/:courseOfferingId/schedule', controller.handleDeleteSchedule);
+router.delete(['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'], controller.handleDeleteSchedule);
 
 // --- Syllabus ---
-// POST   /api/v1/lecturer/offerings/:courseOfferingId/syllabus
-// PUT    /api/v1/lecturer/offerings/:courseOfferingId/syllabus
-// DELETE /api/v1/lecturer/offerings/:courseOfferingId/syllabus
 router.post(
-  '/offerings/:courseOfferingId/syllabus',
+  ['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'],
   validateRequest(schemas.setCourseSyllabusSchema),
   controller.handleSetSyllabus,
 );
 router.put(
-  '/offerings/:courseOfferingId/syllabus',
+  ['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'],
   validateRequest(schemas.setCourseSyllabusSchema),
   controller.handleSetSyllabus,
 );
-router.delete('/offerings/:courseOfferingId/syllabus', controller.handleDeleteSyllabus);
+router.delete(['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'], controller.handleDeleteSyllabus);
 
 // --- Materials ---
-// POST   /api/v1/lecturer/offerings/:courseOfferingId/materials
-// DELETE /api/v1/lecturer/offerings/:courseOfferingId/materials/:materialId
 router.post(
-  '/offerings/:courseOfferingId/materials',
+  ['/offerings/:courseOfferingId/materials', '/course-offerings/:courseOfferingId/materials'],
   validateRequest(schemas.addCourseMaterialsSchema),
   controller.handleAddMaterials,
 );
 router.delete(
-  '/offerings/:courseOfferingId/materials/:materialId',
+  ['/offerings/:courseOfferingId/materials/:materialId', '/course-offerings/:courseOfferingId/materials/:materialId'],
   controller.handleDeleteMaterial,
 );
 
 // --- Student Roster & Grading ---
-// GET  /api/v1/lecturer/offerings/:courseOfferingId/students
-// POST /api/v1/lecturer/offerings/:courseOfferingId/grades
-router.get('/offerings/:courseOfferingId/students', controller.handleGetEnrolledStudents);
+router.get(['/offerings/:courseOfferingId/students', '/course-offerings/:courseOfferingId/students'], controller.handleGetEnrolledStudents);
 router.post(
-  '/offerings/:courseOfferingId/grades',
+  ['/offerings/:courseOfferingId/grades', '/course-offerings/:courseOfferingId/grades'],
   validateRequest(schemas.submitGradesSchema),
   controller.handleSubmitGrades,
 );
