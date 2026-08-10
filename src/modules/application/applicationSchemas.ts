@@ -54,33 +54,29 @@ export const programmeSelectionSchema = z.object({
   admissionPathway: z.enum(['UNDERGRADUATE', 'DIRECT_ENTRY', 'PART_TIME', 'POSTGRADUATE']),
 });
 
+export const DOCUMENT_TYPES = [
+  'OLEVEL_RESULT',
+  'HIGHER_QUALIFICATION_CERTIFICATE',
+  'TRANSCRIPT',
+  'JAMB_RESULT',
+  'PASSPORT_PHOTOGRAPH',
+  'BIRTH_CERTIFICATE',
+  'LGA_CERTIFICATE',
+  'ID_PASSPORT',
+  'NYSC_CERTIFICATE',
+  'CV',
+  'STATEMENT_OF_PURPOSE',
+  'REFERENCE_LETTERS',
+  'CERTIFICATE',
+] as const;
+
 export const documentSignatureSchema = z.object({
-  documentType: z.enum([
-    'TRANSCRIPT',
-    'ID_PASSPORT',
-    'PASSPORT_PHOTOGRAPH',
-    'CERTIFICATE',
-    'JAMB_RESULT',
-    'BIRTH_CERTIFICATE',
-    'LGA_CERTIFICATE',
-    'CV',
-    'STATEMENT_OF_PURPOSE',
-  ]),
+  documentType: z.enum(DOCUMENT_TYPES),
   fileName: z.string().min(1, 'File name is required'),
 });
 
 export const addDocumentSchema = z.object({
-  documentType: z.enum([
-    'TRANSCRIPT',
-    'ID_PASSPORT',
-    'PASSPORT_PHOTOGRAPH',
-    'CERTIFICATE',
-    'JAMB_RESULT',
-    'BIRTH_CERTIFICATE',
-    'LGA_CERTIFICATE',
-    'CV',
-    'STATEMENT_OF_PURPOSE',
-  ]),
+  documentType: z.enum(DOCUMENT_TYPES),
   fileUrl: z.string().url('Must be a valid Cloudinary URL'),
 });
 
