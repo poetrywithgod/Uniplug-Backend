@@ -1,5 +1,7 @@
-import PDFDocument from 'pdfkit';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const PDFDocument = require('pdfkit');
 import cloudinary from '../configs/cloudinaryConfig';
+
 
 export interface OfferLetterData {
   applicantName: string;
