@@ -101,11 +101,14 @@ type AcademicRecord {
 }
 
 type ProgrammeSelection {
-  faculty          String
-  course           String
+  facultyId        String?
+  faculty          String?
+  departmentId     String?
+  course           String?
   studyMode        StudyMode
   admissionPathway String?
 }
+
 
 
 type UploadedDocument {
