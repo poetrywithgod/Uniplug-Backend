@@ -293,10 +293,34 @@ export const updateProgrammeSelection = async (
     );
   }
 
+  // Lookup Faculty & Department to validate and store resolved names for display/PDF generation
+  const facultyRecord = await prisma.faculty.findFirst({
+    where: { id: payload.facultyId, tenantId: application.schoolId },
+  });
+
+  if (!facultyRecord) {
+    throw createError(404, 'Faculty not found.');
+  }
+
+  const departmentRecord = await prisma.department.findFirst({
+    where: { id: payload.departmentId, tenantId: application.schoolId },
+  });
+
+  if (!departmentRecord) {
+    throw createError(404, 'Department not found.');
+  }
+
   const updatedApplication = await prisma.application.update({
     where: { id: applicationId },
     data: {
-      programmeSelection: { ...payload },
+      programmeSelection: {
+        facultyId: payload.facultyId,
+        departmentId: payload.departmentId,
+        faculty: facultyRecord.name,
+        course: departmentRecord.name,
+        studyMode: payload.studyMode,
+        admissionPathway: payload.admissionPathway,
+      },
       progressPercentage: Math.max(application.progressPercentage, 80),
     },
   });
