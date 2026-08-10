@@ -334,7 +334,7 @@ model AcademicSession {
 
 model AcademicSemester {
   id        String          @id @default(auto()) @map("_id") @db.ObjectId
-  name      String          // e.g. "First Semester", "Second Semester"
+  name      Semester
   isActive  Boolean         @default(false)
   sessionId String          @db.ObjectId
   session   AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
