@@ -9,6 +9,7 @@ import {
 } from '../auth/authSecurity';
 import { sendStaffOnboardingEmail, sendOfferIssuedEmail } from '../../utils/email';
 
+import { Semester } from '../../../generated/prisma';
 import { generateAdminId, generateStaffId, generateMatricNumber } from '../../utils/helpers';
 
 
@@ -642,9 +643,10 @@ export const activateSession = async (sessionId: string, actor: ActorContext) =>
  */
 export const createSemester = async (
   sessionId: string,
-  payload: { name: string; isActive?: boolean },
+  payload: { name: Semester; isActive?: boolean },
   actor: ActorContext,
 ) => {
+
   if (!actor.tenantId) {
     throw createError(400, 'School admin account is not linked to a tenant.');
   }
