@@ -22,7 +22,10 @@ import {
   handleGetHODs,
   handleAssignHODToDepartment,
   handleRemoveHODFromDepartment,
+  handleIssueOffer,
+  handleGetOffers,
 } from './adminController';
+
 import { requireAuth, requireRole, ROLES } from '../../middlewares/authMiddleware';
 import { validateRequest, validateQuery } from '../../utils/validation';
 import {
@@ -37,6 +40,8 @@ import {
   getAdmittedStudentsQuerySchema,
   getLecturersQuerySchema,
   assignHODSchema,
+  issueOfferSchema,
+  getOffersQuerySchema,
 } from './adminSchemas';
 
 const router = express.Router();
@@ -57,12 +62,27 @@ router.patch(
   handleUpdateApplicationStatus,
 );
 
+router.post(
+  '/applications/:applicationId/issue-offer',
+  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
+  validateRequest(issueOfferSchema),
+  handleIssueOffer,
+);
+
+router.get(
+  '/offers',
+  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
+  validateQuery(getOffersQuerySchema),
+  handleGetOffers,
+);
+
 router.get(
   '/students',
   requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER, ROLES.HOD),
   validateQuery(getAdmittedStudentsQuerySchema),
   handleGetAdmittedStudents,
 );
+
 
 router.get('/sessions', handleGetSessions);
 
