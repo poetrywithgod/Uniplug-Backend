@@ -15,47 +15,48 @@ router.get('/my-courses', controller.handleGetLecturerCourses);
 
 // --- Schedule ---
 router.post(
-  ['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'],
+  '/offerings/:courseOfferingId/schedule',
   validateRequest(schemas.setCourseScheduleSchema),
   controller.handleSetSchedule,
 );
 router.put(
-  ['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'],
+  '/offerings/:courseOfferingId/schedule',
   validateRequest(schemas.setCourseScheduleSchema),
   controller.handleSetSchedule,
 );
-router.delete(['/offerings/:courseOfferingId/schedule', '/course-offerings/:courseOfferingId/schedule'], controller.handleDeleteSchedule);
+router.delete('/offerings/:courseOfferingId/schedule', controller.handleDeleteSchedule);
 
 // --- Syllabus ---
 router.post(
-  ['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'],
+  '/offerings/:courseOfferingId/syllabus',
   validateRequest(schemas.setCourseSyllabusSchema),
   controller.handleSetSyllabus,
 );
 router.put(
-  ['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'],
+  '/offerings/:courseOfferingId/syllabus',
   validateRequest(schemas.setCourseSyllabusSchema),
   controller.handleSetSyllabus,
 );
-router.delete(['/offerings/:courseOfferingId/syllabus', '/course-offerings/:courseOfferingId/syllabus'], controller.handleDeleteSyllabus);
+router.delete('/offerings/:courseOfferingId/syllabus', controller.handleDeleteSyllabus);
 
 // --- Materials ---
 router.post(
-  ['/offerings/:courseOfferingId/materials', '/course-offerings/:courseOfferingId/materials'],
+  '/offerings/:courseOfferingId/materials',
   validateRequest(schemas.addCourseMaterialsSchema),
   controller.handleAddMaterials,
 );
 router.delete(
-  ['/offerings/:courseOfferingId/materials/:materialId', '/course-offerings/:courseOfferingId/materials/:materialId'],
+  '/offerings/:courseOfferingId/materials/:materialId',
   controller.handleDeleteMaterial,
 );
 
 // --- Student Roster & Grading ---
-router.get(['/offerings/:courseOfferingId/students', '/course-offerings/:courseOfferingId/students'], controller.handleGetEnrolledStudents);
+router.get('/offerings/:courseOfferingId/students', controller.handleGetEnrolledStudents);
 router.post(
-  ['/offerings/:courseOfferingId/grades', '/course-offerings/:courseOfferingId/grades'],
+  '/offerings/:courseOfferingId/grades',
   validateRequest(schemas.submitGradesSchema),
   controller.handleSubmitGrades,
 );
+
 
 export default router;

@@ -7,8 +7,10 @@ import {
   generateOtpCode,
   getOtpExpiryDate,
 } from '../auth/authSecurity';
-import { sendStaffOnboardingEmail } from '../../utils/email';
-import { generateAdminId, generateStaffId } from '../../utils/helpers';
+import { sendStaffOnboardingEmail, sendOfferIssuedEmail } from '../../utils/email';
+
+import { generateAdminId, generateStaffId, generateMatricNumber } from '../../utils/helpers';
+
 
 interface CreateStaffPayload {
   fullName: string;
@@ -522,14 +524,40 @@ export const updateApplicationStatus = async (
   });
 
   if (payload.status === 'APPROVED') {
+    const studentCount = await prisma.user.count({
+      where: {
+        tenantId: application.schoolId,
+        role: 'STUDENT',
+      },
+    });
+
+    const school = await prisma.tenant.findUnique({
+      where: { id: application.schoolId },
+      select: { schoolId: true, schoolName: true },
+    });
+
+    const matricNumber = generateMatricNumber(
+      school?.schoolId || 'SCH',
+      school?.schoolName || 'School',
+      application.programmeSelection?.course || 'GENERAL',
+      studentCount + 1,
+      application.session || undefined
+    );
+
     await prisma.user.update({
       where: { id: application.applicantId },
       data: {
         role: 'STUDENT',
+        staffId: matricNumber,
+        adminId: matricNumber,
+        isVerified: true,
+        approvalStatus: 'VERIFIED',
+        level: 100,
         tenantId: application.schoolId,
       },
     });
   }
+
 
   return {
     message: 'Application status updated successfully',
@@ -1080,6 +1108,191 @@ export const removeHODFromDepartment = async (
       hod: { select: { id: true, firstName: true, lastName: true, email: true } },
     },
   });
+};
+
+/**
+ * Issue an Admission Offer (original choice or realigned course) to an applicant.
+ */
+export const issueAdmissionOffer = async (
+  applicationId: string,
+  payload: {
+    offeredCourse: string;
+    offeredFaculty: string;
+    offeredDepartmentId?: string;
+    isAlternativeOffer?: boolean;
+    remarks?: string;
+    deadlineDays?: number;
+  },
+  actor: ActorContext
+) => {
+  if (!actor.tenantId) {
+    throw createError(400, 'Officer context is missing tenantId.');
+  }
+
+  const application = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: {
+      applicant: true,
+      school: true,
+    },
+  });
+
+  if (!application) {
+    throw createError(404, 'Application not found.');
+  }
+
+  if (application.schoolId !== actor.tenantId) {
+    throw createError(403, 'You do not have permission to manage this application.');
+  }
+
+  const originalCourse = application.programmeSelection?.course || payload.offeredCourse;
+  const originalFaculty = application.programmeSelection?.faculty || payload.offeredFaculty;
+
+  const deadlineDays = payload.deadlineDays || 14;
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + deadlineDays);
+
+  // Upsert AdmissionOffer record
+  const offer = await prisma.admissionOffer.upsert({
+    where: { applicationId },
+    update: {
+      offeredCourse: payload.offeredCourse,
+      offeredFaculty: payload.offeredFaculty,
+      offeredDepartmentId: payload.offeredDepartmentId || null,
+      isAlternativeOffer: payload.isAlternativeOffer ?? false,
+      remarks: payload.remarks || null,
+      status: 'PENDING',
+      expiresAt,
+      issuedById: actor.id,
+      acceptedAt: null,
+      declinedAt: null,
+      declineReason: null,
+    },
+    create: {
+      applicationId,
+      applicantId: application.applicantId,
+      tenantId: actor.tenantId,
+      originalCourse,
+      originalFaculty,
+      offeredCourse: payload.offeredCourse,
+      offeredFaculty: payload.offeredFaculty,
+      offeredDepartmentId: payload.offeredDepartmentId || null,
+      isAlternativeOffer: payload.isAlternativeOffer ?? false,
+      remarks: payload.remarks || null,
+      status: 'PENDING',
+      expiresAt,
+      issuedById: actor.id,
+    },
+  });
+
+  // Update application status to OFFER_ISSUED
+  await prisma.application.update({
+    where: { id: applicationId },
+    data: { status: 'OFFER_ISSUED' },
+  });
+
+  // Send notification email to applicant
+  if (application.applicant?.email) {
+    await sendOfferIssuedEmail({
+      email: application.applicant.email,
+      applicantName: `${application.applicant.firstName} ${application.applicant.lastName}`,
+      schoolName: application.school.schoolName,
+      offeredCourse: payload.offeredCourse,
+      offeredFaculty: payload.offeredFaculty,
+      isAlternativeOffer: payload.isAlternativeOffer ?? false,
+      deadlineDays,
+    });
+  }
+
+  return {
+    message: 'Admission offer issued successfully.',
+    offer,
+  };
+};
+
+/**
+ * Get all issued admission offers with filters.
+ */
+export const getAdmissionOffers = async (
+  query: {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+    isAlternativeOffer?: boolean;
+  },
+  tenantId: string
+) => {
+  const { page, limit, search, status, isAlternativeOffer } = query;
+  const skip = (page - 1) * limit;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = { tenantId };
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (typeof isAlternativeOffer === 'boolean') {
+    where.isAlternativeOffer = isAlternativeOffer;
+  }
+
+  if (search) {
+    where.OR = [
+      { offeredCourse: { contains: search, mode: 'insensitive' } },
+      { originalCourse: { contains: search, mode: 'insensitive' } },
+      { applicant: { firstName: { contains: search, mode: 'insensitive' } } },
+      { applicant: { lastName: { contains: search, mode: 'insensitive' } } },
+      { applicant: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [total, offers] = await Promise.all([
+    prisma.admissionOffer.count({ where }),
+    prisma.admissionOffer.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        applicant: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+        application: {
+          select: {
+            id: true,
+            applicationNumber: true,
+            status: true,
+            programmeSelection: true,
+          },
+        },
+        issuedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    offers,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 
