@@ -84,9 +84,10 @@ export const createSessionSchema = z.object({
 });
 
 export const createSemesterSchema = z.object({
-  name: z.string().min(3, 'Semester name must be at least 3 characters'),
+  name: z.enum(['FIRST_SEMESTER', 'SECOND_SEMESTER']),
   isActive: z.boolean().optional().default(false),
 });
+
 
 export const getAdmittedStudentsQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),

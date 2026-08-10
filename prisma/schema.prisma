@@ -79,9 +79,14 @@ enum DocumentType {
   NYSC_CERTIFICATE
   CV
   STATEMENT_OF_PURPOSE
-  REFERENCE_LETTERS
   CERTIFICATE
 }
+
+enum Semester {
+  FIRST_SEMESTER
+  SECOND_SEMESTER
+}
+
 
 
 type PersonalDetails {
@@ -438,8 +443,9 @@ model CourseOffering {
   courseId        String             @db.ObjectId
   course          Course             @relation(fields: [courseId], references: [id])
   academicSession String
-  semester        String
+  semester        Semester
   status          String             @default("ACTIVE")
+
   tenantId        String             @db.ObjectId
   tenant          Tenant             @relation(fields: [tenantId], references: [id])
   schedule        CourseSchedule?
