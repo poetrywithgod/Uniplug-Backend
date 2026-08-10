@@ -107,3 +107,24 @@ export const assignHODSchema = z.object({
   hodId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid HOD User ID format'),
 });
 
+export const issueOfferSchema = z.object({
+  offeredCourse: z.string().min(2, 'Offered course name is required'),
+  offeredFaculty: z.string().min(2, 'Offered faculty name is required'),
+  offeredDepartmentId: z.string().optional(),
+  isAlternativeOffer: z.boolean().optional().default(false),
+  remarks: z.string().optional(),
+  deadlineDays: z.coerce.number().min(1).max(90).optional().default(14),
+});
+
+export const getOffersQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  search: z.string().optional(),
+  status: z.enum(['PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED']).optional(),
+  isAlternativeOffer: z
+    .string()
+    .transform((val) => val === 'true')
+    .optional(),
+});
+
+
