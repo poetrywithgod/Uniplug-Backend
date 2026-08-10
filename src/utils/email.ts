@@ -1,5 +1,7 @@
 import { createTransport } from 'nodemailer';
-import { EMAIL_USERNAME, EMAIL_APP_PASSWORD } from '../configs/envConfig';
+import { EMAIL_USERNAME, EMAIL_APP_PASSWORD, FRONTEND_URL } from '../configs/envConfig';
+
+
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { mailLog } from '../configs/loggerConfig';
 import { escapeHtml } from './sanitize';
@@ -630,3 +632,108 @@ export const sendSchoolAdminOnboardingEmail = async (payload: {
     );
   }
 };
+
+export const sendOfferIssuedEmail = async (payload: {
+  email: string;
+  applicantName: string;
+  schoolName: string;
+  offeredCourse: string;
+  offeredFaculty: string;
+  isAlternativeOffer: boolean;
+  deadlineDays: number;
+}) => {
+  const transporter = createEmailTransporter();
+  const mailOptions = {
+    from: `Uniplug Admissions <${EMAIL_USERNAME}>`,
+    to: payload.email,
+    subject: `Admission Offer Issued — ${payload.schoolName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head><style>
+        body { font-family: Arial, sans-serif; background-color: #f4f5f7; padding: 20px; }
+        .card { background: #ffffff; border-radius: 8px; padding: 30px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { color: #1E3A8A; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
+        .badge { display: inline-block; padding: 4px 10px; background: #DBEAFE; color: #1E40AF; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        .alt-badge { background: #FEF3C7; color: #92400E; }
+        .btn { display: inline-block; background: #1E3A8A; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+      </style></head>
+      <body>
+        <div class="card">
+          <div class="header">${escapeHtml(payload.schoolName)} — Admission Offer</div>
+          <p>Dear ${escapeHtml(payload.applicantName)},</p>
+          <p>Congratulations! You have been granted a provisional offer of admission.</p>
+          <div style="background: #f8fafc; padding: 15px; border-left: 4px solid #1E3A8A; margin: 15px 0;">
+            <p><strong>Offered Course:</strong> ${escapeHtml(payload.offeredCourse)}</p>
+            <p><strong>Faculty:</strong> ${escapeHtml(payload.offeredFaculty)}</p>
+            <p><strong>Offer Type:</strong> <span class="badge ${payload.isAlternativeOffer ? 'alt-badge' : ''}">${payload.isAlternativeOffer ? 'Realigned Alternative Offer' : 'Original Choice'}</span></p>
+          </div>
+          <p>Please log in to your applicant portal within <strong>${payload.deadlineDays} days</strong> to review and respond to this offer.</p>
+          <a href="${FRONTEND_URL}/login" class="btn">View Offer Letter</a>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    mailLog.info(`Offer issued email sent to ${payload.email}: ${info.response}`);
+  } catch (error) {
+    mailLog.error(`Error sending offer issued email to ${payload.email}: ${error}`);
+  }
+};
+
+export const sendOfferAcceptedEmailWithAttachment = async (payload: {
+  email: string;
+  applicantName: string;
+  schoolName: string;
+  offeredCourse: string;
+  matricNumber: string;
+  pdfBuffer: Buffer;
+}) => {
+  const transporter = createEmailTransporter();
+  const mailOptions = {
+    from: `Uniplug Admissions <${EMAIL_USERNAME}>`,
+    to: payload.email,
+    subject: `Admission Offer Accepted & Official Offer Letter — ${payload.schoolName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head><style>
+        body { font-family: Arial, sans-serif; background-color: #f4f5f7; padding: 20px; }
+        .card { background: #ffffff; border-radius: 8px; padding: 30px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { color: #15803D; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
+        .matric-box { background: #DCFCE7; color: #166534; padding: 15px; border-radius: 6px; font-size: 16px; font-weight: bold; text-align: center; margin: 20px 0; }
+      </style></head>
+      <body>
+        <div class="card">
+          <div class="header">🎉 Welcome to ${escapeHtml(payload.schoolName)}!</div>
+          <p>Dear ${escapeHtml(payload.applicantName)},</p>
+          <p>Thank you for accepting your admission offer into <strong>${escapeHtml(payload.offeredCourse)}</strong>.</p>
+          <div class="matric-box">
+            YOUR MATRICULATION NUMBER: ${escapeHtml(payload.matricNumber)}
+          </div>
+          <p>Your official <strong>Provisional Admission Offer Letter (PDF)</strong> is attached to this email and is also available in your student portal.</p>
+          <p>Please print and bring your offer letter for physical screening and clearance.</p>
+        </div>
+      </body>
+      </html>
+    `,
+    attachments: [
+      {
+        filename: `Admission_Offer_Letter_${payload.matricNumber.replace(/\//g, '_')}.pdf`,
+        content: payload.pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    ],
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    mailLog.info(`Offer accepted email sent to ${payload.email}: ${info.response}`);
+  } catch (error) {
+    mailLog.error(`Error sending offer accepted email to ${payload.email}: ${error}`);
+  }
+};
+
