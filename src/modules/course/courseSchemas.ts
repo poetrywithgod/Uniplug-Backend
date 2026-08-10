@@ -21,9 +21,11 @@ export const createCourseSchema = z.object({
   departmentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Department ID format'),
 });
 
+export const SEMESTERS = ['FIRST_SEMESTER', 'SECOND_SEMESTER'] as const;
+
 export const createCourseOfferingSchema = z.object({
   courseId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Course ID format'),
-  semester: z.string().min(2, 'Semester is required'),
+  semester: z.enum(SEMESTERS),
   lecturerIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Lecturer ID format')).optional(),
 });
 

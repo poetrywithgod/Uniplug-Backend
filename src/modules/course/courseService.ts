@@ -1,6 +1,6 @@
 import createError from 'http-errors';
 import prisma from '../../configs/prismaConfig';
-import { CourseCategory, AssignmentStatus, LecturerRole, EnrollmentStatus } from '../../../generated/prisma';
+import { CourseCategory, AssignmentStatus, LecturerRole, EnrollmentStatus, Semester } from '../../../generated/prisma';
 
 // Helper to compute standard Nigerian tertiary letter grades
 export const calculateLetterGrade = (score: number): string => {
@@ -191,10 +191,11 @@ export const getCourses = async (departmentId: string, tenantId: string) => {
  * Create an active semester offering (CourseOffering) for a course.
  */
 export const createCourseOffering = async (
-  payload: { courseId: string; semester: string; lecturerIds?: string[] },
+  payload: { courseId: string; semester: Semester; lecturerIds?: string[] },
   tenantId: string,
   assignedById?: string
 ) => {
+
   const course = await prisma.course.findFirst({
     where: { id: payload.courseId, tenantId },
   });
