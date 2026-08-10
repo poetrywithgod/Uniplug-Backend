@@ -23,7 +23,10 @@ import {
   getHODs,
   assignHODToDepartment,
   removeHODFromDepartment,
+  issueAdmissionOffer,
+  getAdmissionOffers,
 } from './adminService';
+
 
 export const onboardLecturer = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
@@ -295,4 +298,31 @@ export const handleRemoveHODFromDepartment = catchAsync(
     });
   },
 );
+
+export const handleIssueOffer = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const applicationId = req.params.applicationId as string;
+    const result = await issueAdmissionOffer(applicationId, req.body, res.locals.user);
+
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const handleGetOffers = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user as { tenantId: string };
+    const query = req.query as any;
+
+    const result = await getAdmissionOffers(query, user.tenantId);
+
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
 

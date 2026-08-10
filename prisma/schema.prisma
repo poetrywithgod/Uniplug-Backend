@@ -40,8 +40,18 @@ enum ApplicationStatus {
   DRAFT
   SUBMITTED
   UNDER_REVIEW
+  OFFER_ISSUED
+  OFFER_ACCEPTED
+  OFFER_DECLINED
   APPROVED
   REJECTED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
 }
 
 enum StudyMode {
@@ -130,6 +140,7 @@ model Tenant {
   academicSemesters   AcademicSemester[]
   programmes          Programme[]
   programmeEnrollments ProgrammeEnrollment[]
+  admissionOffers     AdmissionOffer[]
 }
 
 model User {
@@ -166,6 +177,8 @@ model User {
   assignedByMe        CourseAssignment[]  @relation("AssignedByHOD")
   departmentsOwned    Department[]        @relation("DepartmentHOD")
   programmeEnrollments ProgrammeEnrollment[]
+  offersGiven          AdmissionOffer[]     @relation("OfficerIssuedOffers")
+  myOffers             AdmissionOffer[]     @relation("ApplicantOffers")
 }
 
 model Credential {
@@ -196,6 +209,8 @@ model Application {
   academicHistory    AcademicRecord?
   programmeSelection ProgrammeSelection?
   documents          UploadedDocument[]
+
+  offer              AdmissionOffer?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -515,4 +530,42 @@ model Grade {
   @@index([tenantId])
   @@index([studentId])
   @@index([courseOfferingId])
+}
+
+model AdmissionOffer {
+  id                  String      @id @default(auto()) @map("_id") @db.ObjectId
+  applicationId       String      @unique @db.ObjectId
+  application         Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicantId         String      @db.ObjectId
+  applicant           User        @relation("ApplicantOffers", fields: [applicantId], references: [id])
+  tenantId            String      @db.ObjectId
+  tenant              Tenant      @relation(fields: [tenantId], references: [id])
+
+  originalCourse      String
+  originalFaculty     String
+
+  offeredCourse       String
+  offeredFaculty      String
+  offeredDepartmentId String?     @db.ObjectId
+
+  isAlternativeOffer  Boolean     @default(false)
+  status              OfferStatus @default(PENDING)
+  remarks             String?
+  expiresAt           DateTime?
+
+  issuedById          String      @db.ObjectId
+  issuedBy            User        @relation("OfficerIssuedOffers", fields: [issuedById], references: [id])
+
+  acceptedAt          DateTime?
+  declinedAt          DateTime?
+  declineReason       String?
+
+  offerLetterUrl      String?
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([applicantId])
+  @@index([issuedById])
 }
