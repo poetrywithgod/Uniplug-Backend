@@ -1043,11 +1043,50 @@ export const getProgrammes = async (tenantId: string, departmentId?: string) => 
   }
   const programmes = await prisma.programme.findMany({
     where: filter,
-    include: { department: { select: { id: true, name: true } } },
+    include: {
+      department: {
+        select: {
+          id: true,
+          name: true,
+          faculty: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
     orderBy: { name: 'asc' },
   });
-  return { programmes };
+
+  const formattedProgrammes = programmes.map((p) => ({
+    id: p.id,
+    name: p.name,
+    code: p.code,
+    durationYears: p.durationYears,
+    creditRequirement: p.creditRequirement,
+    category: p.category,
+    departmentId: p.departmentId,
+    department: {
+      id: p.department.id,
+      name: p.department.name,
+    },
+    facultyId: p.department.faculty?.id || null,
+    faculty: p.department.faculty
+      ? {
+          id: p.department.faculty.id,
+          name: p.department.faculty.name,
+        }
+      : null,
+    tenantId: p.tenantId,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  }));
+
+  return { programmes: formattedProgrammes };
 };
+
 
 /**
  * Enroll a student in an academic programme.
