@@ -340,37 +340,53 @@ export const submitApplication = async (
     throw createError(400, 'Programme selection section is incomplete.');
   }
 
-  const pathway = application.programmeSelection.admissionPathway;
+  const pathway = application.programmeSelection.admissionPathway || '';
   const docs = application.documents || [];
   const uploadedTypes = docs.map((d) => d.documentType);
 
-  if (pathway === 'UNDERGRADUATE') {
-    const required = ['JAMB_RESULT', 'BIRTH_CERTIFICATE', 'LGA_CERTIFICATE', 'PASSPORT_PHOTOGRAPH'];
-    for (const reqType of required) {
-      if (!uploadedTypes.includes(reqType as any)) {
-        throw createError(400, `Missing required document for Undergraduate regular pathway: ${reqType}`);
-      }
-    }
-  } else if (pathway === 'DIRECT_ENTRY') {
-    const required = ['TRANSCRIPT', 'CERTIFICATE', 'BIRTH_CERTIFICATE', 'LGA_CERTIFICATE', 'PASSPORT_PHOTOGRAPH'];
-    for (const reqType of required) {
-      if (!uploadedTypes.includes(reqType as any)) {
-        throw createError(400, `Missing required document for Direct Entry pathway: ${reqType}`);
-      }
-    }
-  } else if (pathway === 'PART_TIME') {
-    const required = ['BIRTH_CERTIFICATE', 'LGA_CERTIFICATE', 'PASSPORT_PHOTOGRAPH'];
-    for (const reqType of required) {
-      if (!uploadedTypes.includes(reqType as any)) {
-        throw createError(400, `Missing required document for Part-Time pathway: ${reqType}`);
-      }
-    }
-  } else if (pathway === 'POSTGRADUATE') {
-    const required = ['TRANSCRIPT', 'CERTIFICATE', 'CV', 'STATEMENT_OF_PURPOSE', 'PASSPORT_PHOTOGRAPH'];
-    for (const reqType of required) {
-      if (!uploadedTypes.includes(reqType as any)) {
-        throw createError(400, `Missing required document for Postgraduate pathway: ${reqType}`);
-      }
+  const REQUIRED_DOCUMENTS_BY_PATHWAY: Record<string, string[]> = {
+    UNDERGRADUATE: [
+      'OLEVEL_RESULT',
+      'JAMB_RESULT',
+      'PASSPORT_PHOTOGRAPH',
+      'BIRTH_CERTIFICATE',
+      'LGA_CERTIFICATE',
+    ],
+    DIRECT_ENTRY: [
+      'OLEVEL_RESULT',
+      'HIGHER_QUALIFICATION_CERTIFICATE',
+      'TRANSCRIPT',
+      'JAMB_RESULT',
+      'PASSPORT_PHOTOGRAPH',
+      'BIRTH_CERTIFICATE',
+      'LGA_CERTIFICATE',
+    ],
+    PART_TIME: [
+      'OLEVEL_RESULT',
+      'JAMB_RESULT',
+      'PASSPORT_PHOTOGRAPH',
+      'BIRTH_CERTIFICATE',
+      'LGA_CERTIFICATE',
+    ],
+    POSTGRADUATE: [
+      'TRANSCRIPT',
+      'ID_PASSPORT',
+      'NYSC_CERTIFICATE',
+      'CV',
+      'STATEMENT_OF_PURPOSE',
+      'REFERENCE_LETTERS',
+      'PASSPORT_PHOTOGRAPH',
+    ],
+  };
+
+  const required = REQUIRED_DOCUMENTS_BY_PATHWAY[pathway];
+  if (required) {
+    const missing = required.filter((reqType: string) => !uploadedTypes.includes(reqType as any));
+    if (missing.length > 0) {
+      throw createError(
+        400,
+        `Missing required document(s) for ${pathway} pathway: ${missing.join(', ')}`,
+      );
     }
   } else {
     if (docs.length === 0) {

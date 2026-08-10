@@ -25,31 +25,28 @@ export interface ProgrammeSelectionBody {
   admissionPathway: 'UNDERGRADUATE' | 'DIRECT_ENTRY' | 'PART_TIME' | 'POSTGRADUATE';
 }
 
+export type DocumentTypeUnion =
+  | 'OLEVEL_RESULT'
+  | 'HIGHER_QUALIFICATION_CERTIFICATE'
+  | 'TRANSCRIPT'
+  | 'JAMB_RESULT'
+  | 'PASSPORT_PHOTOGRAPH'
+  | 'BIRTH_CERTIFICATE'
+  | 'LGA_CERTIFICATE'
+  | 'ID_PASSPORT'
+  | 'NYSC_CERTIFICATE'
+  | 'CV'
+  | 'STATEMENT_OF_PURPOSE'
+  | 'REFERENCE_LETTERS'
+  | 'CERTIFICATE';
+
 export interface DocumentSignatureBody {
-  documentType:
-    | 'TRANSCRIPT'
-    | 'ID_PASSPORT'
-    | 'PASSPORT_PHOTOGRAPH'
-    | 'CERTIFICATE'
-    | 'JAMB_RESULT'
-    | 'BIRTH_CERTIFICATE'
-    | 'LGA_CERTIFICATE'
-    | 'CV'
-    | 'STATEMENT_OF_PURPOSE';
+  documentType: DocumentTypeUnion;
   fileName: string;
 }
 
 export interface AddDocumentBody {
-  documentType:
-    | 'TRANSCRIPT'
-    | 'ID_PASSPORT'
-    | 'PASSPORT_PHOTOGRAPH'
-    | 'CERTIFICATE'
-    | 'JAMB_RESULT'
-    | 'BIRTH_CERTIFICATE'
-    | 'LGA_CERTIFICATE'
-    | 'CV'
-    | 'STATEMENT_OF_PURPOSE';
+  documentType: DocumentTypeUnion;
   fileUrl: string;
 }
 
