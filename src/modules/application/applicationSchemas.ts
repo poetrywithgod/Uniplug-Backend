@@ -48,11 +48,12 @@ export const academicHistorySchema = z.object({
 });
 
 export const programmeSelectionSchema = z.object({
-  faculty: z.string().min(2, 'Faculty is required'),
-  course: z.string().min(2, 'Course/Programme is required'),
+  facultyId: z.string().min(1, 'Faculty ID is required'),
+  departmentId: z.string().min(1, 'Department ID is required'),
   studyMode: z.enum(['FULL_TIME', 'PART_TIME', 'DISTANCE_LEARNING']),
   admissionPathway: z.enum(['UNDERGRADUATE', 'DIRECT_ENTRY', 'PART_TIME', 'POSTGRADUATE']),
 });
+
 
 export const DOCUMENT_TYPES = [
   'OLEVEL_RESULT',
