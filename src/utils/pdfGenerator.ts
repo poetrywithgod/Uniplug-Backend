@@ -24,7 +24,7 @@ export async function generateOfferLetterPDF(
     const doc = new PDFDocument({ margin: 50 });
     const buffers: Buffer[] = [];
 
-    doc.on('data', (chunk) => buffers.push(chunk));
+    doc.on('data', (chunk: Buffer) => buffers.push(chunk));
     doc.on('end', async () => {
       const pdfBuffer = Buffer.concat(buffers);
       try {
@@ -57,7 +57,8 @@ export async function generateOfferLetterPDF(
       }
     });
 
-    doc.on('error', (err) => reject(err));
+    doc.on('error', (err: Error) => reject(err));
+
 
     // Header
     doc
