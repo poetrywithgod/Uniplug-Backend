@@ -133,13 +133,56 @@ export const submitApplication = catchAsync(
 export const getMyApplications = catchAsync(
   async (req: Request, res: Response) => {
     const applicantId = res.locals.user.id;
-
-    const applications =
-      await applicationService.getMyApplications(applicantId);
+    const applications = await applicationService.getMyApplications(applicantId);
 
     res.status(200).json({
-      message: 'Applications retrieved successfully',
-      data: applications,
+      status: 'success',
+      applications,
+    });
+  },
+);
+
+export const handleGetMyOffer = catchAsync(
+  async (req: Request, res: Response) => {
+    const applicantId = res.locals.user.id;
+    const offer = await applicationService.getApplicantOffer(applicantId);
+
+    res.status(200).json({
+      status: 'success',
+      offer,
+    });
+  },
+);
+
+export const handleAcceptOffer = catchAsync(
+  async (req: Request, res: Response) => {
+    const applicantId = res.locals.user.id;
+    const offerId = req.params.offerId as string;
+
+    const result = await applicationService.acceptAdmissionOffer(offerId, applicantId);
+
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
+
+export const handleDeclineOffer = catchAsync(
+  async (req: Request, res: Response) => {
+    const applicantId = res.locals.user.id;
+    const offerId = req.params.offerId as string;
+    const { declineReason } = req.body;
+
+    const result = await applicationService.declineAdmissionOffer(
+      offerId,
+      applicantId,
+      declineReason
+    );
+
+    res.status(200).json({
+      status: 'success',
+      ...result,
     });
   },
 );

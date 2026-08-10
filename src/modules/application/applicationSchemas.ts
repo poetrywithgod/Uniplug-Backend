@@ -80,3 +80,8 @@ export const addDocumentSchema = z.object({
   fileUrl: z.string().url('Must be a valid Cloudinary URL'),
 });
 
+export const declineOfferSchema = z.object({
+  declineReason: z.string().optional(),
+});
+
+
