@@ -19,8 +19,8 @@ export interface AcademicHistoryBody {
 }
 
 export interface ProgrammeSelectionBody {
-  faculty: string;
-  course: string;
+  facultyId: string;
+  departmentId: string;
   studyMode: 'FULL_TIME' | 'PART_TIME' | 'DISTANCE_LEARNING';
   admissionPathway: 'UNDERGRADUATE' | 'DIRECT_ENTRY' | 'PART_TIME' | 'POSTGRADUATE';
 }
