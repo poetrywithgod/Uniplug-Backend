@@ -14,6 +14,11 @@ import {
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET,
 } from '../../configs/envConfig';
+import { generateOfferLetterPDF } from '../../utils/pdfGenerator';
+import { sendOfferAcceptedEmailWithAttachment } from '../../utils/email';
+import { generateMatricNumber } from '../../utils/helpers';
+
+
 
 /**
  * Generate a secure Cloudinary upload signature and parameters for file upload.
@@ -432,3 +437,223 @@ export const getMyApplications = async (applicantId: string) => {
 
   return applications;
 };
+
+/**
+ * Fetch the active admission offer for the authenticated applicant.
+ */
+export const getApplicantOffer = async (applicantId: string) => {
+  const offer = await prisma.admissionOffer.findFirst({
+    where: { applicantId },
+    include: {
+      application: {
+        select: {
+          id: true,
+          applicationNumber: true,
+          status: true,
+          session: true,
+          programmeSelection: true,
+        },
+      },
+      tenant: {
+        select: {
+          id: true,
+          schoolName: true,
+          schoolId: true,
+        },
+      },
+      issuedBy: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!offer) {
+    throw createError(404, 'No admission offer found for this account.');
+  }
+
+  return offer;
+};
+
+/**
+ * Accept an Admission Offer: Auto-generates Matriculation Number, promotes user to STUDENT,
+ * generates PDF Offer Letter, uploads to Cloudinary, and sends congratulatory email with attachment.
+ */
+export const acceptAdmissionOffer = async (offerId: string, applicantId: string) => {
+  const offer = await prisma.admissionOffer.findUnique({
+    where: { id: offerId },
+    include: {
+      application: {
+        include: {
+          applicant: true,
+          school: true,
+        },
+      },
+      issuedBy: true,
+    },
+  });
+
+  if (!offer) {
+    throw createError(404, 'Admission offer not found.');
+  }
+
+  if (offer.applicantId !== applicantId) {
+    throw createError(403, 'You do not have permission to accept this offer.');
+  }
+
+  if (offer.status === 'ACCEPTED') {
+    throw createError(400, 'You have already accepted this admission offer.');
+  }
+
+  if (offer.status === 'DECLINED') {
+    throw createError(400, 'This admission offer was previously declined.');
+  }
+
+  if (offer.expiresAt && new Date() > new Date(offer.expiresAt)) {
+    await prisma.admissionOffer.update({
+      where: { id: offerId },
+      data: { status: 'EXPIRED' },
+    });
+    throw createError(400, 'This admission offer has expired.');
+  }
+
+  // 1. Auto-generate Matriculation Number (e.g. UOL/PHY/2027/0001 format)
+  const studentCount = await prisma.user.count({
+    where: {
+      tenantId: offer.tenantId,
+      role: 'STUDENT',
+    },
+  });
+
+  const matricNumber = generateMatricNumber(
+    offer.application.school.schoolId,
+    offer.application.school.schoolName,
+    offer.offeredCourse,
+    studentCount + 1,
+    offer.application.session || '2027/2028'
+  );
+
+
+  // 2. Promote Applicant to STUDENT & Assign Matric No
+  const updatedUser = await prisma.user.update({
+    where: { id: applicantId },
+    data: {
+      staffId: matricNumber,
+      adminId: matricNumber,
+      role: 'STUDENT',
+      isVerified: true,
+      approvalStatus: 'VERIFIED',
+      level: 100,
+      departmentId: offer.offeredDepartmentId || null,
+      schoolId: offer.application.school.schoolId,
+      school: offer.application.school.schoolName,
+      tenantId: offer.tenantId,
+    },
+  });
+
+  // 3. Generate Official PDF Offer Letter
+  const officerName = `${offer.issuedBy.firstName} ${offer.issuedBy.lastName}`;
+  const pdfResult = await generateOfferLetterPDF({
+    applicantName: `${updatedUser.firstName} ${updatedUser.lastName}`,
+    applicantEmail: updatedUser.email,
+    applicationNumber: offer.application.applicationNumber || 'N/A',
+    matricNumber,
+    schoolName: offer.application.school.schoolName,
+    session: offer.application.session || '2027/2028',
+    offeredCourse: offer.offeredCourse,
+    offeredFaculty: offer.offeredFaculty,
+    originalCourse: offer.originalCourse,
+    isAlternativeOffer: offer.isAlternativeOffer,
+    remarks: offer.remarks,
+    issuedByOfficer: officerName,
+    dateIssued: offer.createdAt,
+  });
+
+  // 4. Update AdmissionOffer & Application status
+  const acceptedAt = new Date();
+  const updatedOffer = await prisma.admissionOffer.update({
+    where: { id: offerId },
+    data: {
+      status: 'ACCEPTED',
+      acceptedAt,
+      offerLetterUrl: pdfResult.fileUrl,
+    },
+  });
+
+  await prisma.application.update({
+    where: { id: offer.applicationId },
+    data: {
+      status: 'APPROVED',
+      session: offer.application.session || '2027/2028',
+    },
+  });
+
+  // 5. Send Congratulatory Email with PDF Attachment
+  if (updatedUser.email) {
+    await sendOfferAcceptedEmailWithAttachment({
+      email: updatedUser.email,
+      applicantName: `${updatedUser.firstName} ${updatedUser.lastName}`,
+      schoolName: offer.application.school.schoolName,
+      offeredCourse: offer.offeredCourse,
+      matricNumber,
+      pdfBuffer: pdfResult.pdfBuffer,
+    });
+  }
+
+  return {
+    message: 'Admission offer accepted successfully! Congratulations on your admission.',
+    matricNumber,
+    offerLetterUrl: pdfResult.fileUrl,
+    offer: updatedOffer,
+  };
+};
+
+/**
+ * Decline an Admission Offer.
+ */
+export const declineAdmissionOffer = async (
+  offerId: string,
+  applicantId: string,
+  declineReason?: string
+) => {
+  const offer = await prisma.admissionOffer.findUnique({
+    where: { id: offerId },
+  });
+
+  if (!offer) {
+    throw createError(404, 'Admission offer not found.');
+  }
+
+  if (offer.applicantId !== applicantId) {
+    throw createError(403, 'You do not have permission to decline this offer.');
+  }
+
+  if (offer.status === 'ACCEPTED') {
+    throw createError(400, 'Cannot decline an offer that has already been accepted.');
+  }
+
+  const declinedAt = new Date();
+  const updatedOffer = await prisma.admissionOffer.update({
+    where: { id: offerId },
+    data: {
+      status: 'DECLINED',
+      declinedAt,
+      declineReason: declineReason || null,
+    },
+  });
+
+  await prisma.application.update({
+    where: { id: offer.applicationId },
+    data: { status: 'OFFER_DECLINED' },
+  });
+
+  return {
+    message: 'Admission offer declined.',
+    offer: updatedOffer,
+  };
+};
+

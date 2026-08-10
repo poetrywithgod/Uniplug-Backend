@@ -9,6 +9,7 @@ import {
   documentSignatureSchema,
   addDocumentSchema,
   startApplicationSchema,
+  declineOfferSchema,
 } from './applicationSchemas';
 
 const router = Router();
@@ -18,34 +19,48 @@ router.use(requireAuth, requireRole(ROLES.APPLICANT));
 
 // Start a new application
 router.post(
-  '/',
+  '/start',
   validateRequest(startApplicationSchema),
   applicationController.startApplication,
 );
 
 // Get all applications for the current applicant
-router.get('/', applicationController.getMyApplications);
+router.get('/my-applications', applicationController.getMyApplications);
+
+// Fetch applicant's active offer details
+router.get('/my-offer', applicationController.handleGetMyOffer);
+
+// Accept admission offer
+router.post('/offers/:offerId/accept', applicationController.handleAcceptOffer);
+
+// Decline admission offer
+router.post(
+  '/offers/:offerId/decline',
+  validateRequest(declineOfferSchema),
+  applicationController.handleDeclineOffer,
+);
 
 // Update step 1: Personal Details
-router.patch(
+router.put(
   '/:applicationId/personal-details',
   validateRequest(personalDetailsSchema),
   applicationController.updatePersonalDetails,
 );
 
 // Update step 2: Academic History
-router.patch(
+router.put(
   '/:applicationId/academic-history',
   validateRequest(academicHistorySchema),
   applicationController.updateAcademicHistory,
 );
 
 // Update step 3: Programme Selection
-router.patch(
+router.put(
   '/:applicationId/programme-selection',
   validateRequest(programmeSelectionSchema),
   applicationController.updateProgrammeSelection,
 );
+
 
 // Step 4a: Get Cloudinary signature for document upload
 router.post(
@@ -65,3 +80,4 @@ router.post(
 router.post('/:applicationId/submit', applicationController.submitApplication);
 
 export default router;
+
