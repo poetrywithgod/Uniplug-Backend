@@ -8,7 +8,19 @@ import {
   resetPassword,
   resendRegistrationOtp,
   verifyRegistrationOtp,
+  getCurrentUser,
 } from './authService';
+
+export const getMe = catchAsync(
+  async (_req: Request, res: Response, _next: NextFunction) => {
+    const result = await getCurrentUser(res.locals.user.id);
+
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  },
+);
 
 export const register = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {

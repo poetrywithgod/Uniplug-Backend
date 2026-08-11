@@ -1,5 +1,4 @@
 import express from 'express';
-
 import {
   forgotPasswordWithToken,
   login,
@@ -7,7 +6,9 @@ import {
   resendOtp,
   resetPasswordWithToken,
   verifyOtp,
+  getMe,
 } from './authController';
+import { requireAuth } from '../../middlewares/authMiddleware';
 import { validateRequest } from '../../utils/validation';
 import {
   forgotPasswordSchema,
@@ -20,6 +21,7 @@ import {
 
 const router = express.Router();
 
+router.get('/me', requireAuth, getMe);
 router.post('/register', validateRequest(registerSchema), register);
 router.post('/verify-otp', validateRequest(verifyOtpSchema), verifyOtp);
 router.post('/resend-otp', validateRequest(resendOtpSchema), resendOtp);
