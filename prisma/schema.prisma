@@ -365,22 +365,31 @@ model Programme {
   @@index([departmentId])
 }
 
+enum ProgrammeEnrollmentStatus {
+  ACTIVE
+  GRADUATED
+  SPILLOVER
+  WITHDRAWN
+}
+
 model ProgrammeEnrollment {
-  id               String          @id @default(auto()) @map("_id") @db.ObjectId
-  studentId        String          @db.ObjectId
-  student          User            @relation(fields: [studentId], references: [id])
-  programmeId      String          @db.ObjectId
-  programme        Programme       @relation(fields: [programmeId], references: [id])
-  startSessionId   String          @db.ObjectId
-  startSession     AcademicSession @relation(fields: [startSessionId], references: [id])
-  entryLevel       String          // e.g. "100 Level", "ND I"
-  currentLevel     String          // e.g. "200 Level", "ND II"
-  admissionPathway String          // UTME, Direct Entry, Internal Progression, Conversion, Transfer
-  isActive         Boolean         @default(true)
-  tenantId         String          @db.ObjectId
-  tenant           Tenant          @relation(fields: [tenantId], references: [id])
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id                    String                    @id @default(auto()) @map("_id") @db.ObjectId
+  studentId             String                    @db.ObjectId
+  student               User                      @relation(fields: [studentId], references: [id])
+  programmeId           String                    @db.ObjectId
+  programme             Programme                 @relation(fields: [programmeId], references: [id])
+  startSessionId        String                    @db.ObjectId
+  startSession          AcademicSession           @relation(fields: [startSessionId], references: [id])
+  entryLevel            String                    // e.g. "100 Level", "ND I"
+  currentLevel          String                    // e.g. "200 Level", "ND II"
+  admissionPathway      String                    // UTME, Direct Entry, Internal Progression, Conversion, Transfer
+  isActive              Boolean                   @default(true)
+  status                ProgrammeEnrollmentStatus @default(ACTIVE)
+  lastPromotedSessionId String?                   @db.ObjectId
+  tenantId              String                    @db.ObjectId
+  tenant                Tenant                    @relation(fields: [tenantId], references: [id])
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
 
   @@index([tenantId])
   @@index([studentId])
