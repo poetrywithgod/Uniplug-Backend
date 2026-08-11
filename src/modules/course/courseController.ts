@@ -20,10 +20,11 @@ export const handleCreateDepartment = catchAsync(
 export const handleGetDepartments = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;
-    if (!user?.tenantId) {
-      throw createError(400, 'Tenant context is missing.');
+    const tenantId = user?.tenantId || (req.query.schoolId as string);
+    if (!tenantId) {
+      throw createError(400, 'Tenant context or schoolId is missing.');
     }
-    const result = await courseService.getDepartments(user.tenantId);
+    const result = await courseService.getDepartments(tenantId);
     res.status(200).json({
       status: 'success',
       ...result,
@@ -48,16 +49,18 @@ export const handleCreateFaculty = catchAsync(
 export const handleGetFaculties = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const user = res.locals.user;
-    if (!user?.tenantId) {
-      throw createError(400, 'Tenant context is missing.');
+    const tenantId = user?.tenantId || (req.query.schoolId as string);
+    if (!tenantId) {
+      throw createError(400, 'Tenant context or schoolId is missing.');
     }
-    const result = await courseService.getFaculties(user.tenantId);
+    const result = await courseService.getFaculties(tenantId);
     res.status(200).json({
       status: 'success',
       ...result,
     });
   }
 );
+
 
 export const handleCreateCourse = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {

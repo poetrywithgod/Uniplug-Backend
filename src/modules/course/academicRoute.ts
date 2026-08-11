@@ -32,9 +32,21 @@ router.post(
 );
 router.get(
   '/departments',
-  requireAuth,
-  requireRole(ROLES.SCHOOL_ADMIN, ROLES.HOD),
-  controller.handleGetDepartments,
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.query.schoolId) {
+      return controller.handleGetDepartments(req, res, next);
+    }
+    return requireAuth(req, res, () =>
+      requireRole(
+        ROLES.SCHOOL_ADMIN,
+        ROLES.HOD,
+        ROLES.ADMISSION_OFFICER,
+        ROLES.LECTURER,
+        ROLES.STUDENT,
+        ROLES.APPLICANT,
+      )(req, res, () => controller.handleGetDepartments(req, res, next)),
+    );
+  },
 );
 
 // --- Faculties ---
@@ -47,10 +59,23 @@ router.post(
 );
 router.get(
   '/faculties',
-  requireAuth,
-  requireRole(ROLES.SCHOOL_ADMIN, ROLES.HOD),
-  controller.handleGetFaculties,
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.query.schoolId) {
+      return controller.handleGetFaculties(req, res, next);
+    }
+    return requireAuth(req, res, () =>
+      requireRole(
+        ROLES.SCHOOL_ADMIN,
+        ROLES.HOD,
+        ROLES.ADMISSION_OFFICER,
+        ROLES.LECTURER,
+        ROLES.STUDENT,
+        ROLES.APPLICANT,
+      )(req, res, () => controller.handleGetFaculties(req, res, next)),
+    );
+  },
 );
+
 
 // --- Programme Enrollments ---
 router.post(
