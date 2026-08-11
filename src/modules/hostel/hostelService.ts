@@ -155,30 +155,33 @@ export const applyForHostel = async (
     throw createError(400, 'You already have an active hostel application');
   }
 
-  // Find student's admission application to verify gender
+  // 1. Verify user is a STUDENT in this tenant
+  const user = await prisma.user.findFirst({
+    where: { id: studentId, tenantId, role: 'STUDENT' },
+  });
+
+  if (!user) {
+    throw createError(403, 'Only enrolled students can apply for hostels.');
+  }
+
+  // 2. Find student's admission application to verify gender
   const admissionApp = await prisma.application.findFirst({
     where: {
       applicantId: studentId,
       schoolId: tenantId,
-      status: 'APPROVED',
     },
+    orderBy: { createdAt: 'desc' },
   });
 
-  if (!admissionApp || !admissionApp.personalDetails) {
-    throw createError(
-      400,
-      'Could not determine student gender from admission records',
-    );
+  const rawGender = admissionApp?.personalDetails?.gender;
+  const gender = rawGender ? String(rawGender).trim().toUpperCase() : null;
+
+  if (hostel.type === HostelType.MALE && gender && gender !== 'MALE') {
+    throw createError(400, 'This hostel is strictly for male students.');
   }
 
-  const { gender } = admissionApp.personalDetails;
-
-  if (hostel.type === 'MALE' && gender !== 'MALE') {
-    throw createError(400, 'This hostel is strictly for male students');
-  }
-
-  if (hostel.type === 'FEMALE' && gender !== 'FEMALE') {
-    throw createError(400, 'This hostel is strictly for female students');
+  if (hostel.type === HostelType.FEMALE && gender && gender !== 'FEMALE') {
+    throw createError(400, 'This hostel is strictly for female students.');
   }
 
   return prisma.hostelApplication.create({
