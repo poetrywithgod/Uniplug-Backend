@@ -562,7 +562,16 @@ export const acceptAdmissionOffer = async (offerId: string, applicantId: string)
   );
 
 
-  // 2. Promote Applicant to STUDENT & Assign Matric No
+  // 2. Determine Entry Level & Promote Applicant to STUDENT & Assign Matric No
+  const pathway = offer.application.programmeSelection?.admissionPathway || '';
+  const isDE =
+    pathway.trim().toLowerCase().includes('direct') ||
+    pathway.trim().toLowerCase().includes('de') ||
+    pathway.trim().toLowerCase().includes('conversion') ||
+    pathway.trim().toLowerCase().includes('hnd');
+  const startingLevelNum = isDE ? 200 : 100;
+  const startingLevelStr = `${startingLevelNum} Level`;
+
   const updatedUser = await prisma.user.update({
     where: { id: applicantId },
     data: {
@@ -571,13 +580,81 @@ export const acceptAdmissionOffer = async (offerId: string, applicantId: string)
       role: 'STUDENT',
       isVerified: true,
       approvalStatus: 'VERIFIED',
-      level: 100,
+      level: startingLevelNum,
       departmentId: offer.offeredDepartmentId || null,
       schoolId: offer.application.school.schoolId,
       school: offer.application.school.schoolName,
       tenantId: offer.tenantId,
     },
   });
+
+  // Automatically create/update ProgrammeEnrollment for the new student
+  let programme = await prisma.programme.findFirst({
+    where: {
+      tenantId: offer.tenantId,
+      OR: [
+        { name: { contains: offer.offeredCourse, mode: 'insensitive' } },
+        { departmentId: offer.offeredDepartmentId || undefined },
+      ],
+    },
+  });
+
+  if (!programme && offer.offeredDepartmentId) {
+    programme = await prisma.programme.findFirst({
+      where: { tenantId: offer.tenantId, departmentId: offer.offeredDepartmentId },
+    });
+  }
+
+  let academicSession = await prisma.academicSession.findFirst({
+    where: {
+      tenantId: offer.tenantId,
+      name: offer.application.session || undefined,
+    },
+  });
+
+  if (!academicSession) {
+    academicSession = await prisma.academicSession.findFirst({
+      where: { tenantId: offer.tenantId, isActive: true },
+    });
+  }
+
+  if (programme && academicSession) {
+    const existingEnrollment = await prisma.programmeEnrollment.findFirst({
+      where: {
+        studentId: applicantId,
+        tenantId: offer.tenantId,
+      },
+    });
+
+    if (existingEnrollment) {
+      await prisma.programmeEnrollment.update({
+        where: { id: existingEnrollment.id },
+        data: {
+          programmeId: programme.id,
+          startSessionId: academicSession.id,
+          entryLevel: startingLevelStr,
+          currentLevel: startingLevelStr,
+          admissionPathway: pathway || (isDE ? 'Direct Entry' : 'UTME'),
+          isActive: true,
+          status: 'ACTIVE',
+        },
+      });
+    } else {
+      await prisma.programmeEnrollment.create({
+        data: {
+          studentId: applicantId,
+          programmeId: programme.id,
+          startSessionId: academicSession.id,
+          entryLevel: startingLevelStr,
+          currentLevel: startingLevelStr,
+          admissionPathway: pathway || (isDE ? 'Direct Entry' : 'UTME'),
+          isActive: true,
+          status: 'ACTIVE',
+          tenantId: offer.tenantId,
+        },
+      });
+    }
+  }
 
   // 3. Generate Official PDF Offer Letter
   const officerName = `${offer.issuedBy.firstName} ${offer.issuedBy.lastName}`;

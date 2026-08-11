@@ -545,6 +545,15 @@ export const updateApplicationStatus = async (
       application.session || undefined
     );
 
+    const pathway = application.programmeSelection?.admissionPathway || '';
+    const isDE =
+      pathway.trim().toLowerCase().includes('direct') ||
+      pathway.trim().toLowerCase().includes('de') ||
+      pathway.trim().toLowerCase().includes('conversion') ||
+      pathway.trim().toLowerCase().includes('hnd');
+    const startingLevelNum = isDE ? 200 : 100;
+    const startingLevelStr = `${startingLevelNum} Level`;
+
     await prisma.user.update({
       where: { id: application.applicantId },
       data: {
@@ -553,12 +562,74 @@ export const updateApplicationStatus = async (
         adminId: matricNumber,
         isVerified: true,
         approvalStatus: 'VERIFIED',
-        level: 100,
+        level: startingLevelNum,
+        departmentId: application.programmeSelection?.departmentId || undefined,
         tenantId: application.schoolId,
       },
     });
-  }
 
+    // Auto-create/update ProgrammeEnrollment
+    let programme = await prisma.programme.findFirst({
+      where: {
+        tenantId: application.schoolId,
+        OR: [
+          { name: { contains: application.programmeSelection?.course || '', mode: 'insensitive' } },
+          { departmentId: application.programmeSelection?.departmentId || undefined },
+        ],
+      },
+    });
+
+    let academicSession = await prisma.academicSession.findFirst({
+      where: {
+        tenantId: application.schoolId,
+        name: application.session || undefined,
+      },
+    });
+
+    if (!academicSession) {
+      academicSession = await prisma.academicSession.findFirst({
+        where: { tenantId: application.schoolId, isActive: true },
+      });
+    }
+
+    if (programme && academicSession) {
+      const existingEnrollment = await prisma.programmeEnrollment.findFirst({
+        where: {
+          studentId: application.applicantId,
+          tenantId: application.schoolId,
+        },
+      });
+
+      if (existingEnrollment) {
+        await prisma.programmeEnrollment.update({
+          where: { id: existingEnrollment.id },
+          data: {
+            programmeId: programme.id,
+            startSessionId: academicSession.id,
+            entryLevel: startingLevelStr,
+            currentLevel: startingLevelStr,
+            admissionPathway: pathway || (isDE ? 'Direct Entry' : 'UTME'),
+            isActive: true,
+            status: 'ACTIVE',
+          },
+        });
+      } else {
+        await prisma.programmeEnrollment.create({
+          data: {
+            studentId: application.applicantId,
+            programmeId: programme.id,
+            startSessionId: academicSession.id,
+            entryLevel: startingLevelStr,
+            currentLevel: startingLevelStr,
+            admissionPathway: pathway || (isDE ? 'Direct Entry' : 'UTME'),
+            isActive: true,
+            status: 'ACTIVE',
+            tenantId: application.schoolId,
+          },
+        });
+      }
+    }
+  }
 
   return {
     message: 'Application status updated successfully',
@@ -607,7 +678,154 @@ export const createSession = async (
 };
 
 /**
- * Activate a specific Academic Session, automatically deactivating other sessions.
+ * Run Automated Student Level Progression Engine upon Academic Session activation:
+ * 1. Promotes eligible active students (+100 level) if currentLevel < durationYears * 100.
+ * 2. Capped / Final-Year Students:
+ *    - If student has failing grades ('F' or score < 45) -> Mark status as SPILLOVER (remains at max level).
+ *    - If student has passed all courses with no failing grades -> Mark status as GRADUATED and deactivate enrollment.
+ * 3. Idempotency protection via lastPromotedSessionId to ensure students are only promoted once per session.
+ */
+export const runStudentLevelProgressionEngine = async (
+  tenantId: string,
+  newSessionId: string,
+) => {
+  const students = await prisma.user.findMany({
+    where: {
+      tenantId,
+      role: 'STUDENT',
+    },
+    include: {
+      programmeEnrollments: {
+        where: { isActive: true },
+        include: {
+          programme: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+      grades: {
+        select: {
+          score: true,
+          letterGrade: true,
+        },
+      },
+    },
+  });
+
+  let promotedCount = 0;
+  let graduatedCount = 0;
+  let spilloverCount = 0;
+  let skippedCount = 0;
+
+  for (const student of students) {
+    const activeEnrollment = student.programmeEnrollments[0];
+
+    // Check idempotency: If already processed for this session, skip
+    if (activeEnrollment && activeEnrollment.lastPromotedSessionId === newSessionId) {
+      skippedCount++;
+      continue;
+    }
+
+    const durationYears = activeEnrollment?.programme?.durationYears || 4;
+    const maxLevel = durationYears * 100;
+
+    const currentLevelNum =
+      student.level ||
+      (activeEnrollment?.currentLevel ? parseInt(activeEnrollment.currentLevel.replace(/\D/g, ''), 10) : 100) ||
+      100;
+
+    if (currentLevelNum < maxLevel) {
+      // Regular promotion: +100 level
+      const newLevelNum = currentLevelNum + 100;
+      const newLevelStr = `${newLevelNum} Level`;
+
+      await prisma.user.update({
+        where: { id: student.id },
+        data: { level: newLevelNum },
+      });
+
+      if (activeEnrollment) {
+        await prisma.programmeEnrollment.update({
+          where: { id: activeEnrollment.id },
+          data: {
+            currentLevel: newLevelStr,
+            lastPromotedSessionId: newSessionId,
+            status: 'ACTIVE',
+          },
+        });
+      } else {
+        const defaultProg = await prisma.programme.findFirst({
+          where: {
+            tenantId,
+            departmentId: student.departmentId || undefined,
+          },
+        });
+        if (defaultProg) {
+          await prisma.programmeEnrollment.create({
+            data: {
+              studentId: student.id,
+              programmeId: defaultProg.id,
+              startSessionId: newSessionId,
+              entryLevel: '100 Level',
+              currentLevel: newLevelStr,
+              admissionPathway: 'UTME',
+              isActive: true,
+              status: 'ACTIVE',
+              lastPromotedSessionId: newSessionId,
+              tenantId,
+            },
+          });
+        }
+      }
+
+      promotedCount++;
+    } else {
+      // Final Year student reached or exceeded max level -> Check carryovers
+      const hasCarryovers = student.grades.some(
+        (g) => g.letterGrade === 'F' || (g.score !== null && g.score !== undefined && g.score < 45),
+      );
+
+      if (hasCarryovers) {
+        // Carryover / Spillover: Remain at max level
+        if (activeEnrollment) {
+          await prisma.programmeEnrollment.update({
+            where: { id: activeEnrollment.id },
+            data: {
+              lastPromotedSessionId: newSessionId,
+              status: 'SPILLOVER',
+              isActive: true,
+            },
+          });
+        }
+        spilloverCount++;
+      } else {
+        // No carryovers: Mark as Graduated
+        if (activeEnrollment) {
+          await prisma.programmeEnrollment.update({
+            where: { id: activeEnrollment.id },
+            data: {
+              lastPromotedSessionId: newSessionId,
+              status: 'GRADUATED',
+              isActive: false,
+            },
+          });
+        }
+        graduatedCount++;
+      }
+    }
+  }
+
+  return {
+    totalStudents: students.length,
+    promotedCount,
+    graduatedCount,
+    spilloverCount,
+    skippedCount,
+  };
+};
+
+/**
+ * Activate a specific Academic Session, automatically deactivating other sessions
+ * and executing the automated student level progression engine.
  */
 export const activateSession = async (sessionId: string, actor: ActorContext) => {
   if (!actor.tenantId) {
@@ -632,9 +850,16 @@ export const activateSession = async (sessionId: string, actor: ActorContext) =>
     data: { isActive: true },
   });
 
+  // Run the automated level progression & graduation engine
+  const progressionResult = await runStudentLevelProgressionEngine(
+    actor.tenantId,
+    sessionId,
+  );
+
   return {
     message: 'Academic session activated successfully.',
     session: updated,
+    progression: progressionResult,
   };
 };
 
@@ -864,8 +1089,24 @@ export const getAdmittedStudents = async (
     prisma.user.count({ where }),
   ]);
 
+  const formattedStudents = students.map((s) => ({
+    id: s.id,
+    firstName: s.firstName,
+    lastName: s.lastName,
+    email: s.email,
+    phoneNumber: s.phoneNumber,
+    role: s.role,
+    isVerified: s.isVerified,
+    level: s.level,
+    matricNumber: s.staffId || null,
+    department: s.department,
+    programmeEnrollments: s.programmeEnrollments,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+  }));
+
   return {
-    data: students,
+    data: formattedStudents,
     meta: {
       total,
       page,
