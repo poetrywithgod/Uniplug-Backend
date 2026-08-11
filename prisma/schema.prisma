@@ -79,7 +79,9 @@ enum DocumentType {
   NYSC_CERTIFICATE
   CV
   STATEMENT_OF_PURPOSE
+  REFERENCE_LETTERS
   CERTIFICATE
+  OTHER
 }
 
 enum Semester {

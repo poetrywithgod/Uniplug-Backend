@@ -69,6 +69,7 @@ export const DOCUMENT_TYPES = [
   'STATEMENT_OF_PURPOSE',
   'REFERENCE_LETTERS',
   'CERTIFICATE',
+  'OTHER',
 ] as const;
 
 export const documentSignatureSchema = z.object({
