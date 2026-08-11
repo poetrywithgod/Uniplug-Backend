@@ -39,34 +39,197 @@ const roleMap: Record<RegisterBody['role'], Role> = {
   parent: Role.PARENT,
 };
 
-const toPublicUser = (user: {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string | null;
-  role: Role;
-  isVerified: boolean;
-  school?: string | null;
-  schoolId?: string | null;
-  approvalStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
-  staffId?: string | null;
-  department?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}): PublicUser => ({
-  firstName: user.firstName,
-  lastName: user.lastName,
-  email: user.email,
-  phoneNumber: user.phoneNumber,
-  role: user.role,
-  isVerified: user.isVerified,
-  school: user.school,
-  schoolId: user.schoolId,
-  approvalStatus: user.approvalStatus,
-  staffId: user.staffId,
-  department: user.department,
-});
+export const buildRichUserProfile = async (userId: string): Promise<PublicUser> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      department: {
+        include: {
+          faculty: true,
+        },
+      },
+      programmeEnrollments: {
+        where: { isActive: true },
+        include: {
+          programme: {
+            include: {
+              department: {
+                include: {
+                  faculty: true,
+                },
+              },
+            },
+          },
+          startSession: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    },
+  });
+
+  if (!user) {
+    throw createError(404, 'User not found.');
+  }
+
+  let activeSession: { id: string; name: string } | null = null;
+  let activeSemester: { id: string; name: string } | null = null;
+
+  if (user.tenantId) {
+    const session = await prisma.academicSession.findFirst({
+      where: { tenantId: user.tenantId, isActive: true },
+      select: { id: true, name: true },
+    });
+
+    if (session) {
+      activeSession = session;
+      const semester = await prisma.academicSemester.findFirst({
+        where: { sessionId: session.id, isActive: true },
+        select: { id: true, name: true },
+      });
+      if (semester) {
+        activeSemester = semester;
+      }
+    }
+  }
+
+  const activeEnrollment = user.programmeEnrollments?.[0] || null;
+
+  let resolvedDepartment: { id: string; name: string } | null = null;
+  if (user.department) {
+    resolvedDepartment = {
+      id: user.department.id,
+      name: user.department.name,
+    };
+  } else if (activeEnrollment?.programme?.department) {
+    resolvedDepartment = {
+      id: activeEnrollment.programme.department.id,
+      name: activeEnrollment.programme.department.name,
+    };
+  }
+
+  let resolvedFaculty: { id: string; name: string; code?: string } | null = null;
+  if (user.department?.faculty) {
+    resolvedFaculty = {
+      id: user.department.faculty.id,
+      name: user.department.faculty.name,
+      code: user.department.faculty.code,
+    };
+  } else if (activeEnrollment?.programme?.department?.faculty) {
+    resolvedFaculty = {
+      id: activeEnrollment.programme.department.faculty.id,
+      name: activeEnrollment.programme.department.faculty.name,
+      code: activeEnrollment.programme.department.faculty.code,
+    };
+  }
+
+  // Base profile common to all users
+  const baseProfile = {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+    isVerified: user.isVerified,
+  };
+
+  // 1. STUDENT Role Profile: Include matricNumber, level, programme, session, semester; exclude staffId & adminId
+  if (user.role === Role.STUDENT) {
+    return {
+      ...baseProfile,
+      matricNumber: user.staffId || user.adminId || null,
+      level: user.level ?? null,
+      school: user.school,
+      schoolId: user.schoolId,
+      tenantId: user.tenantId,
+      department: resolvedDepartment,
+      faculty: resolvedFaculty,
+      programmeEnrollment: activeEnrollment
+        ? {
+            id: activeEnrollment.id,
+            programmeId: activeEnrollment.programmeId,
+            programmeName: activeEnrollment.programme.name,
+            programmeCode: activeEnrollment.programme.code,
+            entryLevel: activeEnrollment.entryLevel,
+            currentLevel: activeEnrollment.currentLevel,
+            admissionPathway: activeEnrollment.admissionPathway,
+            status: activeEnrollment.status,
+            isActive: activeEnrollment.isActive,
+            startSession: activeEnrollment.startSession
+              ? {
+                  id: activeEnrollment.startSession.id,
+                  name: activeEnrollment.startSession.name,
+                }
+              : null,
+          }
+        : null,
+      activeSession,
+      activeSemester,
+    };
+  }
+
+  // 2. STAFF Roles: Include staffId, adminId, approvalStatus; exclude matricNumber, level & programmeEnrollment
+  const staffRoles: Role[] = [
+    Role.LECTURER,
+    Role.HOD,
+    Role.SCHOOL_ADMIN,
+    Role.ADMISSION_OFFICER,
+    Role.EXAMINATION_OFFICER,
+    Role.FINANCE_OFFICER,
+    Role.HOSTEL_MANAGER,
+    Role.HOSTEL_STAFF,
+  ];
+  const isStaffRole = staffRoles.includes(user.role);
+
+  if (isStaffRole) {
+    const staffProfile: Record<string, any> = {
+      ...baseProfile,
+      staffId: user.staffId || (user.role === Role.SCHOOL_ADMIN ? user.adminId : null),
+      approvalStatus: user.approvalStatus,
+      school: user.school,
+      schoolId: user.schoolId,
+      tenantId: user.tenantId,
+      department: resolvedDepartment,
+      faculty: resolvedFaculty,
+      activeSession,
+      activeSemester,
+    };
+    if (user.role === Role.SCHOOL_ADMIN && user.adminId) {
+      staffProfile.adminId = user.adminId;
+    }
+    return staffProfile as PublicUser;
+  }
+
+  // 3. APPLICANT Role Profile: Exclude matricNumber, staffId, adminId, level, programme
+  if (user.role === Role.APPLICANT) {
+    return {
+      ...baseProfile,
+      school: user.school,
+      schoolId: user.schoolId,
+      tenantId: user.tenantId,
+    };
+  }
+
+  // 4. Other Roles (PARENT, SUPER_ADMIN)
+  return {
+    ...baseProfile,
+    school: user.school,
+    schoolId: user.schoolId,
+    tenantId: user.tenantId,
+  };
+};
+
+/**
+ * Get current authenticated user profile with full student & academic context.
+ */
+export const getCurrentUser = async (userId: string) => {
+  const user = await buildRichUserProfile(userId);
+  return {
+    message: 'User profile retrieved successfully.',
+    user,
+  };
+};
 
 /**
  * Register a new applicant or parent account.
@@ -99,7 +262,7 @@ export const registerUser = async (payload: RegisterBody) => {
 
   const role = roleMap[roleInput];
 
-const user = existingUser
+  const user = existingUser
     ? await prisma.user.update({
         where: { email },
         data: {
@@ -144,10 +307,12 @@ const user = existingUser
 
   await sendOtpEmail(firstName, email, otpCode);
 
+  const richUser = await buildRichUserProfile(user.id);
+
   return {
     message:
       'Registration successful. Check your email for OTP verification code.',
-    user: toPublicUser(user),
+    user: richUser,
   };
 };
 
@@ -172,10 +337,12 @@ export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
       role: user.role,
     });
 
+    const richUser = await buildRichUserProfile(user.id);
+
     return {
       message: 'Account is already verified.',
       token,
-      user: toPublicUser(user),
+      user: richUser,
     };
   }
 
@@ -208,10 +375,12 @@ export const verifyRegistrationOtp = async (payload: VerifyOtpBody) => {
     role: updatedUser.role,
   });
 
+  const richUser = await buildRichUserProfile(updatedUser.id);
+
   return {
     message: 'Account verified successfully.',
     token,
-    user: toPublicUser(updatedUser),
+    user: richUser,
   };
 };
 
@@ -310,10 +479,12 @@ export const loginUser = async (payload: LoginBody) => {
     role: user.role,
   });
 
+  const richUser = await buildRichUserProfile(user.id);
+
   return {
     message: 'Login successful.',
     token,
-    user: toPublicUser(user),
+    user: richUser,
   };
 };
 
