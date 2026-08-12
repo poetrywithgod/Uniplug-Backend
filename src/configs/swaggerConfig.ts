@@ -196,14 +196,15 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['faculty', 'course', 'studyMode'],
+                required: ['facultyId', 'departmentId', 'studyMode', 'admissionPathway'],
                 properties: {
-                  faculty: { type: 'string', example: 'Engineering' },
-                  course: { type: 'string', example: 'Computer Engineering' },
+                  facultyId: { type: 'string', example: '507f1f77bcf86cd799439011' },
+                  departmentId: { type: 'string', example: '507f1f77bcf86cd799439012' },
                   studyMode: {
                     type: 'string',
                     enum: ['FULL_TIME', 'PART_TIME', 'DISTANCE_LEARNING'],
                   },
+                  admissionPathway: { type: 'string', example: 'UTME' },
                 },
               },
             },
@@ -238,10 +239,21 @@ const swaggerSpec = {
                   documentType: {
                     type: 'string',
                     enum: [
+                      'OLEVEL_RESULT',
+                      'HIGHER_QUALIFICATION_CERTIFICATE',
                       'TRANSCRIPT',
-                      'ID_PASSPORT',
+                      'JAMB_RESULT',
                       'PASSPORT_PHOTOGRAPH',
+                      'BIRTH_CERTIFICATE',
+                      'LGA_CERTIFICATE',
+                      'ID_PASSPORT',
+                      'NYSC_CERTIFICATE',
+                      'CV',
+                      'STATEMENT_OF_PURPOSE',
+                      'REFERENCE_LETTERS',
+                      'REFERENCE_LETTER',
                       'CERTIFICATE',
+                      'OTHER',
                     ],
                   },
                   fileName: { type: 'string', example: 'transcript.pdf' },
@@ -279,10 +291,21 @@ const swaggerSpec = {
                   documentType: {
                     type: 'string',
                     enum: [
+                      'OLEVEL_RESULT',
+                      'HIGHER_QUALIFICATION_CERTIFICATE',
                       'TRANSCRIPT',
-                      'ID_PASSPORT',
+                      'JAMB_RESULT',
                       'PASSPORT_PHOTOGRAPH',
+                      'BIRTH_CERTIFICATE',
+                      'LGA_CERTIFICATE',
+                      'ID_PASSPORT',
+                      'NYSC_CERTIFICATE',
+                      'CV',
+                      'STATEMENT_OF_PURPOSE',
+                      'REFERENCE_LETTERS',
+                      'REFERENCE_LETTER',
                       'CERTIFICATE',
+                      'OTHER',
                     ],
                   },
                   fileUrl: {
@@ -1680,12 +1703,13 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['courseName', 'courseCode', 'creditUnits', 'level', 'category', 'departmentId'],
+                required: ['courseName', 'courseCode', 'creditUnits', 'level', 'semester', 'category', 'departmentId'],
                 properties: {
                   courseName: { type: 'string', example: 'Data Structures' },
                   courseCode: { type: 'string', example: 'CSC301' },
                   creditUnits: { type: 'integer', example: 3 },
                   level: { type: 'integer', example: 300 },
+                  semester: { type: 'string', enum: ['FIRST_SEMESTER', 'SECOND_SEMESTER'], example: 'FIRST_SEMESTER' },
                   category: { type: 'string', enum: ['CORE', 'ELECTIVE', 'GENERAL_STUDIES'], example: 'CORE' },
                   description: { type: 'string', example: 'Fundamentals of algorithms and data structures' },
                   departmentId: { type: 'string', example: '60d5ec4b868e5a2b3479427a' },
@@ -1722,10 +1746,9 @@ const swaggerSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['courseId', 'semester'],
+                required: ['courseId'],
                 properties: {
                   courseId: { type: 'string', example: '60d5ec4b868e5a2b3479427c' },
-                  semester: { type: 'string', example: 'FIRST_SEMESTER' },
                   lecturerIds: {
                     type: 'array',
                     items: { type: 'string' },
