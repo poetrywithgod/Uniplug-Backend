@@ -17,6 +17,7 @@ export const createCourseSchema = z.object({
   creditUnits: z.number().int().min(1).max(10),
   level: z.number().int().min(100).max(1000), // e.g. 100, 200, 300, 400...
   category: z.enum(['CORE', 'ELECTIVE', 'GENERAL_STUDIES']),
+  semester: z.enum(['FIRST_SEMESTER', 'SECOND_SEMESTER']),
   description: z.string().max(500).optional(),
   departmentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Department ID format'),
 });
@@ -25,7 +26,6 @@ export const SEMESTERS = ['FIRST_SEMESTER', 'SECOND_SEMESTER'] as const;
 
 export const createCourseOfferingSchema = z.object({
   courseId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Course ID format'),
-  semester: z.enum(SEMESTERS),
   lecturerIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Lecturer ID format')).optional(),
 });
 
