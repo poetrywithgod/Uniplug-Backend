@@ -137,6 +137,7 @@ export const createCourse = async (
     creditUnits: number;
     level: number;
     category: 'CORE' | 'ELECTIVE' | 'GENERAL_STUDIES';
+    semester: Semester;
     description?: string;
     departmentId: string;
   },
@@ -165,6 +166,7 @@ export const createCourse = async (
       courseCode: payload.courseCode,
       creditUnits: payload.creditUnits,
       level: payload.level,
+      semester: payload.semester,
       category: payload.category as CourseCategory,
       description: payload.description,
       departmentId: payload.departmentId,
@@ -191,7 +193,7 @@ export const getCourses = async (departmentId: string, tenantId: string) => {
  * Create an active semester offering (CourseOffering) for a course.
  */
 export const createCourseOffering = async (
-  payload: { courseId: string; semester: Semester; lecturerIds?: string[] },
+  payload: { courseId: string; lecturerIds?: string[] },
   tenantId: string,
   assignedById?: string
 ) => {
@@ -211,17 +213,25 @@ export const createCourseOffering = async (
     throw createError(400, 'Active academic session not found. Please activate a session first.');
   }
 
-  // Check if offering already exists for this semester
+  // Check semester timing validation
+  const activeSem = await prisma.academicSemester.findFirst({
+    where: { sessionId: activeSession.id, isActive: true },
+  });
+
+  if (activeSem?.name === 'SECOND_SEMESTER' && course.semester === 'FIRST_SEMESTER') {
+    throw createError(400, 'Cannot create offerings for first semester courses during the second semester.');
+  }
+
+  // Check if offering already exists for this session
   const existing = await prisma.courseOffering.findFirst({
     where: {
       courseId: payload.courseId,
       academicSession: activeSession.name,
-      semester: payload.semester,
       tenantId,
     },
   });
   if (existing) {
-    throw createError(409, 'Course offering already exists for this session and semester.');
+    throw createError(409, 'Course offering already exists for this session.');
   }
 
   // Validate lecturerIds if provided
@@ -244,7 +254,6 @@ export const createCourseOffering = async (
       data: {
         courseId: payload.courseId,
         academicSession: activeSession.name,
-        semester: payload.semester,
         tenantId,
       },
     });
@@ -342,7 +351,7 @@ export const getLecturerCourses = async (lecturerId: string, tenantId: string) =
         lecturerRole: assignment.role,
         courseOfferingId: offering.id,
         academicSession: offering.academicSession,
-        semester: offering.semester,
+        semester: offering.course.semester,
         status: offering.status,
         schedule: offering.schedule || null,
         syllabus: offering.syllabus || null,
@@ -895,7 +904,7 @@ export const getEnrolledStudents = async (
       courseName: offering.course.courseName,
       creditUnits: offering.course.creditUnits,
       level: offering.course.level,
-      semester: offering.semester,
+      semester: offering.course.semester,
       academicSession: offering.academicSession,
     },
     totalStudents: studentsRoster.length,
