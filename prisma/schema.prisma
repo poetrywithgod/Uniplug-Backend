@@ -409,6 +409,7 @@ model Course {
   courseCode     String           @unique
   creditUnits    Int
   level          Int
+  semester       Semester
   category       CourseCategory
   description    String?
   departmentId   String           @db.ObjectId
@@ -454,7 +455,6 @@ model CourseOffering {
   courseId        String             @db.ObjectId
   course          Course             @relation(fields: [courseId], references: [id])
   academicSession String
-  semester        Semester
   status          String             @default("ACTIVE")
 
   tenantId        String             @db.ObjectId
