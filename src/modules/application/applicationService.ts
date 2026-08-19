@@ -16,7 +16,7 @@ import {
 } from '../../configs/envConfig';
 import { generateOfferLetterPDF } from '../../utils/pdfGenerator';
 import { sendOfferAcceptedEmailWithAttachment } from '../../utils/email';
-import { generateMatricNumber } from '../../utils/helpers';
+import { generateMatricNumber, checkSecondSemesterRestriction } from '../../utils/helpers';
 
 
 
@@ -136,6 +136,13 @@ export const startApplication = async (
 
   if (!tenant) {
     throw createError(404, 'School not found.');
+  }
+
+  if (await checkSecondSemesterRestriction(schoolId)) {
+    throw createError(
+      400,
+      'Applications are closed for the current academic session as the active semester is Second Semester. Applications are only accepted during First Semester.',
+    );
   }
 
   // Apply constraint check strictly here before Prisma fails
@@ -358,6 +365,13 @@ export const submitApplication = async (
     throw createError(400, 'Application has already been submitted.');
   }
 
+  if (await checkSecondSemesterRestriction(application.schoolId)) {
+    throw createError(
+      400,
+      'Applications cannot be submitted during the Second Semester. Submissions are only allowed during First Semester.',
+    );
+  }
+
   // Validate that all sections are complete
   if (!application.personalDetails) {
     throw createError(400, 'Personal details section is incomplete.');
@@ -545,6 +559,13 @@ export const acceptAdmissionOffer = async (offerId: string, applicantId: string)
     throw createError(400, 'This admission offer has expired.');
   }
 
+  if (await checkSecondSemesterRestriction(offer.tenantId)) {
+    throw createError(
+      400,
+      'Admission offers cannot be accepted and students cannot be admitted into the university during the Second Semester.',
+    );
+  }
+
   // 1. Auto-generate Matriculation Number (e.g. UOL/PHY/2027/0001 format)
   const studentCount = await prisma.user.count({
     where: {
@@ -564,11 +585,12 @@ export const acceptAdmissionOffer = async (offerId: string, applicantId: string)
 
   // 2. Determine Entry Level & Promote Applicant to STUDENT & Assign Matric No
   const pathway = offer.application.programmeSelection?.admissionPathway || '';
+  const normalizedPathway = pathway.trim().toLowerCase();
   const isDE =
-    pathway.trim().toLowerCase().includes('direct') ||
-    pathway.trim().toLowerCase().includes('de') ||
-    pathway.trim().toLowerCase().includes('conversion') ||
-    pathway.trim().toLowerCase().includes('hnd');
+    normalizedPathway.includes('direct') ||
+    normalizedPathway.includes('conversion') ||
+    normalizedPathway.includes('hnd') ||
+    /\bde\b/.test(normalizedPathway);
   const startingLevelNum = isDE ? 200 : 100;
   const startingLevelStr = `${startingLevelNum} Level`;
 

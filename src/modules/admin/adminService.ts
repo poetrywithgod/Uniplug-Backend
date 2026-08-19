@@ -10,7 +10,7 @@ import {
 import { sendStaffOnboardingEmail, sendOfferIssuedEmail } from '../../utils/email';
 
 import { Semester } from '../../../generated/prisma';
-import { generateAdminId, generateStaffId, generateMatricNumber } from '../../utils/helpers';
+import { generateAdminId, generateStaffId, generateMatricNumber, checkSecondSemesterRestriction } from '../../utils/helpers';
 
 
 interface CreateStaffPayload {
@@ -511,6 +511,12 @@ export const updateApplicationStatus = async (
   }
 
   if (payload.status === 'APPROVED') {
+    if (await checkSecondSemesterRestriction(actor.tenantId)) {
+      throw createError(
+        400,
+        'Students cannot be admitted into the university during the Second Semester. Admission approvals are restricted to First Semester.',
+      );
+    }
     const activeSession = await prisma.academicSession.findFirst({
       where: { tenantId: actor.tenantId, isActive: true },
     });
@@ -546,11 +552,12 @@ export const updateApplicationStatus = async (
     );
 
     const pathway = application.programmeSelection?.admissionPathway || '';
+    const normalizedPathway = pathway.trim().toLowerCase();
     const isDE =
-      pathway.trim().toLowerCase().includes('direct') ||
-      pathway.trim().toLowerCase().includes('de') ||
-      pathway.trim().toLowerCase().includes('conversion') ||
-      pathway.trim().toLowerCase().includes('hnd');
+      normalizedPathway.includes('direct') ||
+      normalizedPathway.includes('conversion') ||
+      normalizedPathway.includes('hnd') ||
+      /\bde\b/.test(normalizedPathway);
     const startingLevelNum = isDE ? 200 : 100;
     const startingLevelStr = `${startingLevelNum} Level`;
 
@@ -1386,6 +1393,13 @@ export const issueAdmissionOffer = async (
 
   if (application.schoolId !== actor.tenantId) {
     throw createError(403, 'You do not have permission to manage this application.');
+  }
+
+  if (await checkSecondSemesterRestriction(actor.tenantId)) {
+    throw createError(
+      400,
+      'Admission offers cannot be issued during the Second Semester. Admissions are only open during First Semester.',
+    );
   }
 
   const originalCourse = application.programmeSelection?.course || payload.offeredCourse;
