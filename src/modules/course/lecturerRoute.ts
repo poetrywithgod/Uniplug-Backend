@@ -52,6 +52,7 @@ router.delete(
 
 // --- Student Roster & Grading ---
 router.get('/offerings/:courseOfferingId/students', controller.handleGetEnrolledStudents);
+router.get('/offerings/:courseOfferingId/results', controller.handleGetOfferingResults);
 router.post(
   '/offerings/:courseOfferingId/grades',
   validateRequest(schemas.submitGradesSchema),

@@ -19,6 +19,9 @@ router.post(
 // GET /api/v1/student/my-courses
 router.get('/my-courses', controller.handleGetStudentEnrollments);
 
+// GET /api/v1/student/results
+router.get('/results', controller.handleGetStudentAcademicResults);
+
 // GET /api/v1/student/programme-enrollments
 router.get(
   '/programme-enrollments',
