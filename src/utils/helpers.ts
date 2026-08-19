@@ -1,3 +1,33 @@
+import prisma from '../configs/prismaConfig';
+
+/**
+ * Checks if the active semester for a given tenant is the Second Semester.
+ * Applications and admissions are prohibited during the Second Semester.
+ */
+export const checkSecondSemesterRestriction = async (tenantId: string): Promise<boolean> => {
+  if (!tenantId) return false;
+
+  const activeSession = await prisma.academicSession.findFirst({
+    where: { tenantId, isActive: true },
+  });
+
+  if (activeSession) {
+    const activeSemester = await prisma.academicSemester.findFirst({
+      where: { sessionId: activeSession.id, isActive: true },
+    });
+
+    if (activeSemester?.name === 'SECOND_SEMESTER') {
+      return true;
+    }
+  }
+
+  const directActiveSemester = await prisma.academicSemester.findFirst({
+    where: { tenantId, isActive: true },
+  });
+
+  return directActiveSemester?.name === 'SECOND_SEMESTER';
+};
+
 export const generateAdminId = (firstName: string, schoolId: string): string => {
   // e.g. "UPH", "J", "4823" -> "UPH-J-4823"
   const prefix = schoolId.toUpperCase();
