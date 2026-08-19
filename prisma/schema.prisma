@@ -183,6 +183,7 @@ model User {
   courseEnrollments   CourseEnrollment[]
   grades              Grade[]             @relation("StudentGrades")
   gradesGiven         Grade[]             @relation("GradedByLecturer")
+  gradesApproved      Grade[]             @relation("ApprovedByHOD")
   courseAssignments   CourseAssignment[]  @relation("LecturerAssignments")
   assignedByMe        CourseAssignment[]  @relation("AssignedByHOD")
   departmentsOwned    Department[]        @relation("DepartmentHOD")
@@ -528,6 +529,12 @@ model CourseEnrollment {
   @@index([courseOfferingId])
 }
 
+enum GradeStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 model Grade {
   id               String         @id @default(auto()) @map("_id") @db.ObjectId
   studentId        String         @db.ObjectId
@@ -541,6 +548,12 @@ model Grade {
   remarks          String?
   gradedById       String         @db.ObjectId
   gradedBy         User           @relation("GradedByLecturer", fields: [gradedById], references: [id])
+  status           GradeStatus    @default(PENDING_APPROVAL)
+  isApproved       Boolean        @default(false)
+  approvedById     String?        @db.ObjectId
+  approvedBy       User?          @relation("ApprovedByHOD", fields: [approvedById], references: [id])
+  approvedAt       DateTime?
+  rejectionReason  String?
   tenantId         String         @db.ObjectId
   tenant           Tenant         @relation(fields: [tenantId], references: [id])
   createdAt        DateTime       @default(now())
