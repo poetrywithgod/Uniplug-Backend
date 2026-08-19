@@ -82,10 +82,15 @@ export const handleGetCourses = catchAsync(
     if (!user?.tenantId) {
       throw createError(400, 'Tenant context is missing.');
     }
-    const departmentId = req.query.departmentId as string;
-    if (!departmentId) {
-      throw createError(400, 'departmentId query parameter is required.');
+    let departmentId = req.query.departmentId as string | undefined;
+
+    if (user.role === 'LECTURER') {
+      departmentId = user.departmentId || departmentId;
+      if (!departmentId) {
+        throw createError(400, 'Lecturer account is not associated with a department.');
+      }
     }
+
     const result = await courseService.getCourses(departmentId, user.tenantId);
     res.status(200).json({
       status: 'success',
@@ -114,7 +119,13 @@ export const handleGetCourseOfferings = catchAsync(
     if (!user?.tenantId) {
       throw createError(400, 'Tenant context is missing.');
     }
-    const result = await courseService.getCourseOfferings(user.tenantId);
+    let departmentId = req.query.departmentId as string | undefined;
+
+    if (user.role === 'LECTURER') {
+      departmentId = user.departmentId || departmentId;
+    }
+
+    const result = await courseService.getCourseOfferings(user.tenantId, departmentId);
     res.status(200).json({
       status: 'success',
       ...result,
@@ -453,6 +464,108 @@ export const handleGetMyProgrammeEnrollments = catchAsync(
       throw createError(400, 'Tenant context is missing.');
     }
     const result = await courseService.getStudentProgrammeEnrollments(user.id, user.tenantId);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+// --- Result Management & HOD Approval ---
+
+export const handleGetOfferingResults = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = Array.isArray(req.params.courseOfferingId)
+      ? req.params.courseOfferingId[0]
+      : (req.params.courseOfferingId as string);
+
+    const result = await courseService.getOfferingResults(courseOfferingId, user);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleGetDepartmentResultsSummary = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const departmentId = (req.query.departmentId as string) || user.departmentId;
+    if (!departmentId) {
+      throw createError(400, 'departmentId is required.');
+    }
+
+    const result = await courseService.getDepartmentResultsSummary(departmentId, user.tenantId);
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleApproveOfferingResults = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = Array.isArray(req.params.courseOfferingId)
+      ? req.params.courseOfferingId[0]
+      : (req.params.courseOfferingId as string);
+
+    const result = await courseService.approveOfferingResults(
+      courseOfferingId,
+      req.body,
+      user
+    );
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleRejectOfferingResults = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const courseOfferingId = Array.isArray(req.params.courseOfferingId)
+      ? req.params.courseOfferingId[0]
+      : (req.params.courseOfferingId as string);
+
+    const result = await courseService.rejectOfferingResults(
+      courseOfferingId,
+      req.body,
+      user
+    );
+    res.status(200).json({
+      status: 'success',
+      ...result,
+    });
+  }
+);
+
+export const handleGetStudentAcademicResults = catchAsync(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user?.tenantId) {
+      throw createError(400, 'Tenant context is missing.');
+    }
+    const studentId =
+      user.role === 'STUDENT'
+        ? user.id
+        : (req.params.studentId as string) || (req.query.studentId as string) || user.id;
+
+    const result = await courseService.getStudentAcademicResults(studentId, user.tenantId);
     res.status(200).json({
       status: 'success',
       ...result,

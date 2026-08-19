@@ -91,6 +91,16 @@ export const submitGradesSchema = z.object({
     .min(1, 'At least one student grade is required'),
 });
 
+export const approveResultsSchema = z.object({
+  studentIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Student ID format')).optional(),
+  remark: z.string().max(200).optional(),
+});
+
+export const rejectResultsSchema = z.object({
+  reason: z.string().min(3, 'Rejection reason must be at least 3 characters').max(500),
+  studentIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Student ID format')).optional(),
+});
+
 export const createProgrammeSchema = z.object({
   name: z.string().min(3, 'Programme name must be at least 3 characters').max(100),
   code: z.string().min(2, 'Programme code must be at least 2 characters').max(20),
