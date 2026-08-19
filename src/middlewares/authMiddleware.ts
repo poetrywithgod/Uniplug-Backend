@@ -60,6 +60,7 @@ export const requireAuth = async (
         tenantId: true,
         schoolId: true,
         school: true,
+        departmentId: true,
       },
     });
 
