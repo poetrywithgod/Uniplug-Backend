@@ -181,9 +181,16 @@ export const createCourse = async (
 /**
  * Fetch all courses registered under a specific department and school tenant.
  */
-export const getCourses = async (departmentId: string, tenantId: string) => {
+export const getCourses = async (departmentId?: string, tenantId?: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {};
+  if (tenantId) where.tenantId = tenantId;
+  if (departmentId) where.departmentId = departmentId;
+
   const courses = await prisma.course.findMany({
-    where: { departmentId, tenantId },
+    where,
+    include: { department: true },
+    orderBy: { courseCode: 'asc' },
   });
   return { courses };
 };
@@ -282,10 +289,23 @@ export const createCourseOffering = async (
 /**
  * Fetch all active course offerings registered for a school tenant.
  */
-export const getCourseOfferings = async (tenantId: string) => {
+export const getCourseOfferings = async (tenantId: string, departmentId?: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = { tenantId, status: 'ACTIVE' };
+  if (departmentId) {
+    where.course = { departmentId };
+  }
+
   const offerings = await prisma.courseOffering.findMany({
-    where: { tenantId, status: 'ACTIVE' },
-    include: { course: true },
+    where,
+    include: {
+      course: {
+        include: {
+          department: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
   });
   return { offerings };
 };
@@ -808,7 +828,35 @@ export const getStudentEnrollments = async (studentId: string, tenantId: string)
       },
     },
   });
-  return { enrollments };
+
+  const enrollmentsWithGrades = await Promise.all(
+    enrollments.map(async (e) => {
+      const grade = await prisma.grade.findFirst({
+        where: { studentId, courseOfferingId: e.courseOfferingId, tenantId },
+      });
+
+      // ONLY reveal scores/grades to student if HOD has APPROVED them!
+      const isApproved = grade?.isApproved === true && grade?.status === 'APPROVED';
+
+      return {
+        ...e,
+        resultStatus: grade ? grade.status : 'NOT_GRADED',
+        isResultApproved: isApproved,
+        grade: isApproved && grade
+          ? {
+              caScore: grade.caScore,
+              examScore: grade.examScore,
+              score: grade.score,
+              letterGrade: grade.letterGrade,
+              remarks: grade.remarks,
+              approvedAt: grade.approvedAt,
+            }
+          : null,
+      };
+    })
+  );
+
+  return { enrollments: enrollmentsWithGrades };
 };
 
 // --- Lecturer Grading & Roster ---
@@ -892,6 +940,10 @@ export const getEnrolledStudents = async (
         totalScore,  // e.g. 88
         grade: letterGrade, // e.g. "A"
         remarks,     // e.g. "Excellent work"
+        status: grade?.status || 'NOT_GRADED',
+        isApproved: grade?.isApproved || false,
+        approvedAt: grade?.approvedAt || null,
+        rejectionReason: grade?.rejectionReason || null,
         updatedAt: grade?.updatedAt || null,
       };
     })
@@ -914,6 +966,7 @@ export const getEnrolledStudents = async (
 
 /**
  * Record or update grading scores (CA, Exam, total score, letter grade, remarks) submitted by an assigned lecturer.
+ * Sets status to PENDING_APPROVAL until HOD approves.
  */
 export const submitGrades = async (
   courseOfferingId: string,
@@ -973,6 +1026,11 @@ export const submitGrades = async (
           letterGrade,
           remarks: gradeItem.remarks || null,
           gradedById,
+          status: 'PENDING_APPROVAL',
+          isApproved: false,
+          approvedById: null,
+          approvedAt: null,
+          rejectionReason: null,
         },
       });
     } else {
@@ -986,6 +1044,8 @@ export const submitGrades = async (
           letterGrade,
           remarks: gradeItem.remarks || null,
           gradedById,
+          status: 'PENDING_APPROVAL',
+          isApproved: false,
           tenantId,
         },
       });
@@ -994,8 +1054,591 @@ export const submitGrades = async (
   }
 
   return {
-    message: `Grades recorded successfully for ${results.length} student(s).`,
+    message: `Grades recorded and submitted for HOD approval for ${results.length} student(s).`,
     grades: results,
+  };
+};
+
+/**
+ * Helper to get grade points on standard Nigerian 5.0 scale
+ */
+export const getGradePoint = (letterGrade?: string | null): number => {
+  switch (letterGrade?.toUpperCase()) {
+    case 'A': return 5.0;
+    case 'B': return 4.0;
+    case 'C': return 3.0;
+    case 'D': return 2.0;
+    case 'E': return 1.0;
+    default: return 0.0;
+  }
+};
+
+/**
+ * HOD / School Admin / Lecturer view of a course offering's comprehensive results sheet.
+ */
+export const getOfferingResults = async (
+  courseOfferingId: string,
+  user: { id: string; role: string; departmentId?: string | null; tenantId: string }
+) => {
+  const offering = await prisma.courseOffering.findFirst({
+    where: { id: courseOfferingId, tenantId: user.tenantId },
+    include: {
+      course: {
+        include: {
+          department: {
+            select: { id: true, name: true, hodId: true },
+          },
+        },
+      },
+      assignments: {
+        where: { status: 'APPROVED' },
+        include: {
+          lecturer: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!offering) {
+    throw createError(404, 'Course offering not found.');
+  }
+
+  // Verify access permissions
+  if (user.role === 'LECTURER') {
+    const isAssigned = offering.assignments.some((a) => a.lecturer.id === user.id);
+    if (!isAssigned) {
+      throw createError(403, 'You are not assigned to teach this course offering.');
+    }
+  } else if (user.role === 'HOD') {
+    if (user.departmentId && offering.course.departmentId !== user.departmentId) {
+      throw createError(403, 'This course does not belong to your department.');
+    }
+  }
+
+  const enrollments = await prisma.courseEnrollment.findMany({
+    where: { courseOfferingId, status: 'ENROLLED', tenantId: user.tenantId },
+    include: {
+      student: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          level: true,
+          staffId: true,
+          adminId: true,
+        },
+      },
+    },
+    orderBy: { student: { lastName: 'asc' } },
+  });
+
+  const grades = await prisma.grade.findMany({
+    where: { courseOfferingId, tenantId: user.tenantId },
+    include: {
+      gradedBy: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+      approvedBy: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+    },
+  });
+
+  const gradeMap = new Map(grades.map((g) => [g.studentId, g]));
+
+  let totalScoreSum = 0;
+  let gradedCount = 0;
+  let passCount = 0;
+  let approvedCount = 0;
+  let pendingCount = 0;
+  let rejectedCount = 0;
+  const gradeDistribution: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
+
+  const studentsRoster = enrollments.map((e) => {
+    const grade = gradeMap.get(e.studentId);
+    const matricNo = e.student.staffId || e.student.adminId || `STU-${e.student.id.substring(18)}`;
+
+    if (grade) {
+      gradedCount++;
+      totalScoreSum += grade.score;
+      const letter = grade.letterGrade || calculateLetterGrade(grade.score);
+      if (gradeDistribution[letter] !== undefined) {
+        gradeDistribution[letter]++;
+      }
+      if (grade.score >= 40) {
+        passCount++;
+      }
+      if (grade.status === 'APPROVED') approvedCount++;
+      else if (grade.status === 'REJECTED') rejectedCount++;
+      else pendingCount++;
+
+      return {
+        studentId: e.student.id,
+        matricNo,
+        name: `${e.student.firstName} ${e.student.lastName}`.trim(),
+        firstName: e.student.firstName,
+        lastName: e.student.lastName,
+        email: e.student.email,
+        level: e.student.level,
+        caScore: grade.caScore,
+        examScore: grade.examScore,
+        totalScore: grade.score,
+        grade: letter,
+        remarks: grade.remarks,
+        status: grade.status,
+        isApproved: grade.isApproved,
+        approvedAt: grade.approvedAt,
+        rejectionReason: grade.rejectionReason,
+        gradedBy: grade.gradedBy ? `${grade.gradedBy.firstName} ${grade.gradedBy.lastName}` : null,
+        approvedBy: grade.approvedBy ? `${grade.approvedBy.firstName} ${grade.approvedBy.lastName}` : null,
+        updatedAt: grade.updatedAt,
+      };
+    }
+
+    return {
+      studentId: e.student.id,
+      matricNo,
+      name: `${e.student.firstName} ${e.student.lastName}`.trim(),
+      firstName: e.student.firstName,
+      lastName: e.student.lastName,
+      email: e.student.email,
+      level: e.student.level,
+      caScore: null,
+      examScore: null,
+      totalScore: null,
+      grade: null,
+      remarks: null,
+      status: 'NOT_GRADED',
+      isApproved: false,
+      approvedAt: null,
+      rejectionReason: null,
+      gradedBy: null,
+      approvedBy: null,
+      updatedAt: null,
+    };
+  });
+
+  let overallStatus = 'NO_GRADES';
+  if (gradedCount > 0) {
+    if (approvedCount === enrollments.length && enrollments.length > 0) {
+      overallStatus = 'APPROVED';
+    } else if (rejectedCount > 0 && approvedCount === 0) {
+      overallStatus = 'REJECTED';
+    } else if (approvedCount > 0) {
+      overallStatus = 'PARTIALLY_APPROVED';
+    } else {
+      overallStatus = 'PENDING_APPROVAL';
+    }
+  }
+
+  const averageScore = gradedCount > 0 ? Number((totalScoreSum / gradedCount).toFixed(2)) : 0;
+  const passRate = gradedCount > 0 ? Number(((passCount / gradedCount) * 100).toFixed(1)) : 0;
+
+  return {
+    course: {
+      id: offering.course.id,
+      courseOfferingId: offering.id,
+      courseCode: offering.course.courseCode,
+      courseName: offering.course.courseName,
+      creditUnits: offering.course.creditUnits,
+      level: offering.course.level,
+      semester: offering.course.semester,
+      academicSession: offering.academicSession,
+      department: offering.course.department,
+    },
+    lecturers: offering.assignments.map((a) => a.lecturer),
+    summary: {
+      totalEnrolled: enrollments.length,
+      totalGraded: gradedCount,
+      totalApproved: approvedCount,
+      totalPending: pendingCount,
+      totalRejected: rejectedCount,
+      overallStatus,
+      averageScore,
+      passRate,
+      gradeDistribution,
+    },
+    students: studentsRoster,
+  };
+};
+
+/**
+ * HOD Department-level results overview listing all course offerings and their approval status.
+ */
+export const getDepartmentResultsSummary = async (
+  departmentId: string,
+  tenantId: string
+) => {
+  const offerings = await prisma.courseOffering.findMany({
+    where: {
+      tenantId,
+      course: { departmentId },
+    },
+    include: {
+      course: true,
+      assignments: {
+        where: { status: 'APPROVED' },
+        include: { lecturer: { select: { id: true, firstName: true, lastName: true } } },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const summary = await Promise.all(
+    offerings.map(async (offering) => {
+      const totalEnrolled = await prisma.courseEnrollment.count({
+        where: { courseOfferingId: offering.id, status: 'ENROLLED', tenantId },
+      });
+
+      const grades = await prisma.grade.findMany({
+        where: { courseOfferingId: offering.id, tenantId },
+      });
+
+      const totalGraded = grades.length;
+      const approvedCount = grades.filter((g) => g.status === 'APPROVED').length;
+      const rejectedCount = grades.filter((g) => g.status === 'REJECTED').length;
+      const pendingCount = grades.filter((g) => g.status === 'PENDING_APPROVAL').length;
+
+      let status = 'NO_GRADES';
+      if (totalGraded > 0) {
+        if (approvedCount === totalGraded && totalGraded >= totalEnrolled && totalEnrolled > 0) {
+          status = 'APPROVED';
+        } else if (rejectedCount > 0 && approvedCount === 0) {
+          status = 'REJECTED';
+        } else if (approvedCount > 0) {
+          status = 'PARTIALLY_APPROVED';
+        } else {
+          status = 'PENDING_APPROVAL';
+        }
+      }
+
+      const totalScoreSum = grades.reduce((acc, g) => acc + g.score, 0);
+      const avgScore = totalGraded > 0 ? Number((totalScoreSum / totalGraded).toFixed(2)) : 0;
+      const passCount = grades.filter((g) => g.score >= 40).length;
+      const passRate = totalGraded > 0 ? Number(((passCount / totalGraded) * 100).toFixed(1)) : 0;
+
+      return {
+        courseOfferingId: offering.id,
+        courseId: offering.course.id,
+        courseCode: offering.course.courseCode,
+        courseName: offering.course.courseName,
+        creditUnits: offering.course.creditUnits,
+        level: offering.course.level,
+        semester: offering.course.semester,
+        academicSession: offering.academicSession,
+        lecturers: offering.assignments.map((a) => a.lecturer),
+        totalEnrolled,
+        totalGraded,
+        approvedCount,
+        pendingCount,
+        rejectedCount,
+        status,
+        averageScore: avgScore,
+        passRate,
+      };
+    })
+  );
+
+  return { offerings: summary };
+};
+
+/**
+ * HOD decision to APPROVE grades for a course offering so students can view them.
+ */
+export const approveOfferingResults = async (
+  courseOfferingId: string,
+  payload: { studentIds?: string[]; remark?: string },
+  user: { id: string; role: string; departmentId?: string | null; tenantId: string }
+) => {
+  const offering = await prisma.courseOffering.findFirst({
+    where: { id: courseOfferingId, tenantId: user.tenantId },
+    include: { course: true },
+  });
+
+  if (!offering) {
+    throw createError(404, 'Course offering not found.');
+  }
+
+  // Authorization check: User must be HOD of department or SCHOOL_ADMIN
+  if (user.role === 'HOD' && user.departmentId && offering.course.departmentId !== user.departmentId) {
+    throw createError(403, 'You can only approve results for courses in your department.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const whereClause: any = {
+    courseOfferingId,
+    tenantId: user.tenantId,
+  };
+
+  if (payload.studentIds && payload.studentIds.length > 0) {
+    whereClause.studentId = { in: payload.studentIds };
+  }
+
+  const gradesCount = await prisma.grade.count({ where: whereClause });
+  if (gradesCount === 0) {
+    throw createError(400, 'No grades found to approve for this course offering.');
+  }
+
+  const updateResult = await prisma.grade.updateMany({
+    where: whereClause,
+    data: {
+      status: 'APPROVED',
+      isApproved: true,
+      approvedById: user.id,
+      approvedAt: new Date(),
+      rejectionReason: null,
+      ...(payload.remark ? { remarks: payload.remark } : {}),
+    },
+  });
+
+  return {
+    message: `Successfully approved ${updateResult.count} student grade(s). Results are now visible to students.`,
+    approvedCount: updateResult.count,
+    courseCode: offering.course.courseCode,
+    courseName: offering.course.courseName,
+  };
+};
+
+/**
+ * HOD decision to REJECT grades for a course offering back to the lecturer for revisions.
+ */
+export const rejectOfferingResults = async (
+  courseOfferingId: string,
+  payload: { reason: string; studentIds?: string[] },
+  user: { id: string; role: string; departmentId?: string | null; tenantId: string }
+) => {
+  const offering = await prisma.courseOffering.findFirst({
+    where: { id: courseOfferingId, tenantId: user.tenantId },
+    include: { course: true },
+  });
+
+  if (!offering) {
+    throw createError(404, 'Course offering not found.');
+  }
+
+  if (user.role === 'HOD' && user.departmentId && offering.course.departmentId !== user.departmentId) {
+    throw createError(403, 'You can only reject results for courses in your department.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const whereClause: any = {
+    courseOfferingId,
+    tenantId: user.tenantId,
+  };
+
+  if (payload.studentIds && payload.studentIds.length > 0) {
+    whereClause.studentId = { in: payload.studentIds };
+  }
+
+  const updateResult = await prisma.grade.updateMany({
+    where: whereClause,
+    data: {
+      status: 'REJECTED',
+      isApproved: false,
+      rejectionReason: payload.reason,
+    },
+  });
+
+  return {
+    message: `Results returned/rejected for revision. Reason: ${payload.reason}`,
+    rejectedCount: updateResult.count,
+    rejectionReason: payload.reason,
+  };
+};
+
+/**
+ * Official Student Statement of Results / Semester Transcript.
+ * Strictly includes ONLY HOD-approved grades in GPA / CGPA computation.
+ */
+export const getStudentAcademicResults = async (
+  studentId: string,
+  tenantId: string
+) => {
+  const student = await prisma.user.findFirst({
+    where: { id: studentId, tenantId, role: 'STUDENT' },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      staffId: true,
+      adminId: true,
+      level: true,
+      school: true,
+      department: { select: { id: true, name: true } },
+    },
+  });
+
+  if (!student) {
+    throw createError(404, 'Student record not found.');
+  }
+
+  const enrollments = await prisma.courseEnrollment.findMany({
+    where: { studentId, status: 'ENROLLED', tenantId },
+    include: {
+      courseOffering: {
+        include: {
+          course: {
+            include: { department: { select: { id: true, name: true } } },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  const grades = await prisma.grade.findMany({
+    where: { studentId, tenantId },
+  });
+  const gradeMap = new Map(grades.map((g) => [g.courseOfferingId, g]));
+
+  type SemesterResultGroup = {
+    academicSession: string;
+    semester: Semester;
+    totalRegisteredUnits: number;
+    totalEarnedUnits: number;
+    totalGradePoints: number;
+    gpa: number;
+    courses: {
+      courseId: string;
+      courseCode: string;
+      courseName: string;
+      creditUnits: number;
+      category: string;
+      level: number;
+      caScore: number | null;
+      examScore: number | null;
+      score: number | null;
+      letterGrade: string | null;
+      gradePoint: number;
+      status: string;
+      isApproved: boolean;
+      remarks: string | null;
+    }[];
+  };
+
+  const sessionsMap = new Map<string, SemesterResultGroup>();
+
+  let cumulativeRegisteredUnits = 0;
+  let cumulativeEarnedUnits = 0;
+  let cumulativeGradePoints = 0;
+
+  for (const e of enrollments) {
+    const offering = e.courseOffering;
+    const course = offering.course;
+    const grade = gradeMap.get(offering.id);
+
+    const groupKey = `${offering.academicSession}__${course.semester}`;
+    if (!sessionsMap.has(groupKey)) {
+      sessionsMap.set(groupKey, {
+        academicSession: offering.academicSession,
+        semester: course.semester,
+        totalRegisteredUnits: 0,
+        totalEarnedUnits: 0,
+        totalGradePoints: 0,
+        gpa: 0,
+        courses: [],
+      });
+    }
+
+    const group = sessionsMap.get(groupKey)!;
+    const isApproved = grade?.isApproved === true && grade?.status === 'APPROVED';
+
+    if (isApproved && grade) {
+      const units = course.creditUnits;
+      const score = grade.score;
+      const letter = grade.letterGrade || calculateLetterGrade(score);
+      const pointPerUnit = getGradePoint(letter);
+      const points = units * pointPerUnit;
+
+      group.totalRegisteredUnits += units;
+      group.totalGradePoints += points;
+      if (score >= 40) {
+        group.totalEarnedUnits += units;
+      }
+
+      cumulativeRegisteredUnits += units;
+      cumulativeGradePoints += points;
+      if (score >= 40) {
+        cumulativeEarnedUnits += units;
+      }
+
+      group.courses.push({
+        courseId: course.id,
+        courseCode: course.courseCode,
+        courseName: course.courseName,
+        creditUnits: units,
+        category: course.category,
+        level: course.level,
+        caScore: grade.caScore,
+        examScore: grade.examScore,
+        score: grade.score,
+        letterGrade: letter,
+        gradePoint: pointPerUnit,
+        status: 'APPROVED',
+        isApproved: true,
+        remarks: grade.remarks,
+      });
+    } else {
+      // Unapproved or not graded yet
+      group.courses.push({
+        courseId: course.id,
+        courseCode: course.courseCode,
+        courseName: course.courseName,
+        creditUnits: course.creditUnits,
+        category: course.category,
+        level: course.level,
+        caScore: null,
+        examScore: null,
+        score: null,
+        letterGrade: null,
+        gradePoint: 0,
+        status: grade ? grade.status : 'NOT_GRADED',
+        isApproved: false,
+        remarks: grade?.status === 'PENDING_APPROVAL' ? 'Pending HOD Approval' : null,
+      });
+    }
+  }
+
+  const semestersArray = Array.from(sessionsMap.values()).map((s) => {
+    const gpa =
+      s.totalRegisteredUnits > 0
+        ? Number((s.totalGradePoints / s.totalRegisteredUnits).toFixed(2))
+        : 0;
+    return {
+      ...s,
+      gpa,
+    };
+  });
+
+  const cgpa =
+    cumulativeRegisteredUnits > 0
+      ? Number((cumulativeGradePoints / cumulativeRegisteredUnits).toFixed(2))
+      : 0;
+
+  const matricNo = student.staffId || student.adminId || `STU-${student.id.substring(18)}`;
+
+  return {
+    student: {
+      id: student.id,
+      name: `${student.firstName} ${student.lastName}`.trim(),
+      matricNo,
+      email: student.email,
+      level: student.level,
+      school: student.school,
+      department: student.department?.name || null,
+    },
+    academicSummary: {
+      cumulativeRegisteredUnits,
+      cumulativeEarnedUnits,
+      cumulativeGradePoints,
+      cgpa,
+      totalSemesters: semestersArray.length,
+    },
+    semesters: semestersArray,
   };
 };
 

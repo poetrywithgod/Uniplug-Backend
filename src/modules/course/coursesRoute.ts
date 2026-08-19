@@ -98,6 +98,34 @@ router.post(
   controller.handleSubmitGrades,
 );
 
+// --- Result Management & HOD Approval ---
+router.get(
+  '/course-offerings/:courseOfferingId/results',
+  requireRole(ROLES.HOD, ROLES.LECTURER, ROLES.SCHOOL_ADMIN),
+  controller.handleGetOfferingResults,
+);
+router.get(
+  '/department/results',
+  requireRole(ROLES.HOD, ROLES.SCHOOL_ADMIN),
+  controller.handleGetDepartmentResultsSummary,
+);
+router.post(
+  '/course-offerings/:courseOfferingId/approve-results',
+  requireRole(ROLES.HOD, ROLES.SCHOOL_ADMIN),
+  validateRequest(schemas.approveResultsSchema),
+  controller.handleApproveOfferingResults,
+);
+router.post(
+  '/course-offerings/:courseOfferingId/reject-results',
+  requireRole(ROLES.HOD, ROLES.SCHOOL_ADMIN),
+  validateRequest(schemas.rejectResultsSchema),
+  controller.handleRejectOfferingResults,
+);
+router.get(
+  '/students/:studentId/results',
+  requireRole(ROLES.SCHOOL_ADMIN, ROLES.HOD, ROLES.STUDENT),
+  controller.handleGetStudentAcademicResults,
+);
 
 // --- Lecturer Course Offerings & Dashboard ---
 router.get(
