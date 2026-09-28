@@ -151,6 +151,11 @@ model Tenant {
   programmes          Programme[]
   programmeEnrollments ProgrammeEnrollment[]
   admissionOffers     AdmissionOffer[]
+  feeStructures       FeeStructure[]
+  payments            PaymentTransaction[]
+  refundClaims        RefundClaim[]
+  transcriptRequests  TranscriptRequest[]
+  graduationAudits    GraduationAudit[]
 }
 
 model User {
@@ -190,6 +195,10 @@ model User {
   programmeEnrollments ProgrammeEnrollment[]
   offersGiven          AdmissionOffer[]     @relation("OfficerIssuedOffers")
   myOffers             AdmissionOffer[]     @relation("ApplicantOffers")
+  payments             PaymentTransaction[] @relation("StudentPayments")
+  refundClaims         RefundClaim[]        @relation("StudentRefundClaims")
+  transcriptRequests   TranscriptRequest[]  @relation("StudentTranscriptRequests")
+  graduationAudits     GraduationAudit[]    @relation("StudentGraduationAudits")
 }
 
 model Credential {
@@ -532,6 +541,8 @@ model CourseEnrollment {
 enum GradeStatus {
   PENDING_APPROVAL
   APPROVED
+  HOD_APPROVED
+  PUBLISHED
   REJECTED
 }
 
@@ -554,6 +565,9 @@ model Grade {
   approvedBy       User?          @relation("ApprovedByHOD", fields: [approvedById], references: [id])
   approvedAt       DateTime?
   rejectionReason  String?
+  isPublished      Boolean        @default(false)
+  publishedById    String?        @db.ObjectId
+  publishedAt      DateTime?
   tenantId         String         @db.ObjectId
   tenant           Tenant         @relation(fields: [tenantId], references: [id])
   createdAt        DateTime       @default(now())
@@ -601,4 +615,211 @@ model AdmissionOffer {
   @@index([tenantId])
   @@index([applicantId])
   @@index([issuedById])
+}
+
+// ==========================================
+// 1. FINANCE OPERATIONS
+// ==========================================
+
+enum FeeCategory {
+  TUITION
+  ACCEPTANCE
+  HOSTEL
+  DEPARTMENTAL
+  EXAMINATION
+  LATE_REGISTRATION
+  CONVOCATION
+  OTHER
+}
+
+enum FeeStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model FeeStructure {
+  id               String               @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId         String               @db.ObjectId
+  tenant           Tenant               @relation(fields: [tenantId], references: [id])
+  name             String
+  category         FeeCategory
+  amount           Float
+  currency         String               @default("NGN")
+  status           FeeStatus            @default(DRAFT)
+  
+  academicSession  String               // e.g. "2024/2025"
+  semester         Semester?            // optional if annual fee
+  level            Int?                 // e.g. 100, 200, or null for all
+  departmentId     String?              @db.ObjectId
+  programmeId      String?              @db.ObjectId
+  
+  createdBy        String               @db.ObjectId
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  payments         PaymentTransaction[]
+
+  @@index([tenantId, academicSession, status])
+  @@index([tenantId, departmentId])
+  @@index([tenantId, programmeId])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+enum PaymentChannel {
+  CARD
+  BANK_TRANSFER
+  BANK_BRANCH
+  USSD
+  MANUAL_RECEIPT
+}
+
+model PaymentTransaction {
+  id               String               @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId         String               @db.ObjectId
+  tenant           Tenant               @relation(fields: [tenantId], references: [id])
+  studentId        String               @db.ObjectId
+  student          User                 @relation("StudentPayments", fields: [studentId], references: [id])
+  feeStructureId   String?              @db.ObjectId
+  feeStructure     FeeStructure?        @relation(fields: [feeStructureId], references: [id])
+  
+  amount           Float
+  currency         String               @default("NGN")
+  reference        String               @unique // Gateway or Teller Ref
+  channel          PaymentChannel
+  status           PaymentStatus        @default(PENDING)
+  
+  session          String
+  description      String?
+  paidAt           DateTime?
+  reconciledBy     String?              @db.ObjectId
+  reconciledAt     DateTime?
+  
+  refundClaims     RefundClaim[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([tenantId, studentId, status])
+  @@index([tenantId, reference])
+  @@index([tenantId, session])
+}
+
+enum RefundStatus {
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  DISBURSED
+}
+
+model RefundClaim {
+  id               String               @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId         String               @db.ObjectId
+  tenant           Tenant               @relation(fields: [tenantId], references: [id])
+  studentId        String               @db.ObjectId
+  student          User                 @relation("StudentRefundClaims", fields: [studentId], references: [id])
+  transactionId    String               @db.ObjectId
+  transaction      PaymentTransaction   @relation(fields: [transactionId], references: [id])
+  
+  amountRequested  Float
+  amountApproved   Float?
+  reason           String
+  status           RefundStatus         @default(REQUESTED)
+  
+  adjudicatedBy    String?              @db.ObjectId
+  adjudicatedAt    DateTime?
+  adjudicationNote String?
+  disbursementRef  String?              // Bank voucher / payment reference
+  
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, studentId])
+}
+
+// ==========================================
+// 2. EXAMINATION & RECORDS OPERATIONS
+// ==========================================
+
+enum TranscriptType {
+  OFFICIAL
+  UNOFFICIAL
+}
+
+enum TranscriptRequestStatus {
+  NEW
+  VERIFYING
+  READY_TO_ISSUE
+  ISSUED
+  REJECTED
+}
+
+model TranscriptRequest {
+  id               String                  @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId         String                  @db.ObjectId
+  tenant           Tenant                  @relation(fields: [tenantId], references: [id])
+  studentId        String                  @db.ObjectId
+  student          User                    @relation("StudentTranscriptRequests", fields: [studentId], references: [id])
+  type             TranscriptType          @default(OFFICIAL)
+  status           TranscriptRequestStatus @default(NEW)
+  
+  recipientName    String                  // e.g. "University of Oxford"
+  recipientEmail   String?
+  deliveryAddress  String?
+  purpose          String?
+  
+  verificationCode String                  @unique // Public lookup code
+  verificationHash String?                 // SHA-256 hash of result snapshot
+  pdfUrl           String?                 // Cloudinary secure URL
+  
+  issuedBy         String?                 @db.ObjectId
+  issuedAt         DateTime?
+  holdReason       String?
+  
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@index([tenantId, studentId, status])
+  @@index([tenantId, verificationCode])
+}
+
+enum ClearanceEligibility {
+  ELIGIBLE
+  NOT_ELIGIBLE
+  UNDER_REVIEW
+  CLEARED
+}
+
+model GraduationAudit {
+  id                  String               @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId            String               @db.ObjectId
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  studentId           String               @db.ObjectId
+  student             User                 @relation("StudentGraduationAudits", fields: [studentId], references: [id])
+  academicSession     String
+  
+  earnedCredits       Int
+  requiredCredits     Int
+  cgpa                Float
+  hasUnpassedCore     Boolean              @default(false)
+  hasFinancialHold    Boolean              @default(false)
+  hasDisciplinaryHold Boolean              @default(false)
+  
+  status              ClearanceEligibility @default(UNDER_REVIEW)
+  clearedBy           String?              @db.ObjectId
+  clearedAt           DateTime?
+  deficiencyNotes     String?
+  
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@unique([tenantId, studentId, academicSession])
+  @@index([tenantId, academicSession, status])
 }

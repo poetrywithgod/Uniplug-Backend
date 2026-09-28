@@ -13,6 +13,8 @@ import coursesRoutes from './modules/course/coursesRoute';
 import lecturerRoutes from './modules/course/lecturerRoute';
 import studentRoutes from './modules/course/studentRoute';
 import mediaRoutes from './modules/media/mediaRoute';
+import financeRoutes from './modules/finance/financeRoute';
+import examRecordsRoutes from './modules/examRecords/examRecordsRoute';
 import catchAll404Errors from './middlewares/catchAll404Errors';
 import globalErrorHandler from './middlewares/errorHandler';
 import { healthCheck } from './utils/health';
@@ -69,6 +71,8 @@ app.use('/api/v1/academic', academicRoutes);
 app.use('/api/v1/courses', coursesRoutes);
 app.use('/api/v1/lecturer', lecturerRoutes);
 app.use('/api/v1/student', studentRoutes);
+app.use('/api/v1/finance', financeRoutes);
+app.use('/api/v1/exam-records', examRecordsRoutes);
 
 app.get('/debug-sentry', (req, res) => {
   throw new Error('My first Sentry error!');
