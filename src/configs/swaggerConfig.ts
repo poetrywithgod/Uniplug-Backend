@@ -38,6 +38,14 @@ const swaggerSpec = {
       name: 'CourseManagement',
       description: 'Academic departments, courses, offerings, assignments, enrollments, and grading',
     },
+    {
+      name: 'Finance',
+      description: 'Bursary & Finance operations: fee structures, payment ledger, manual reconciliation, refunds, and financial clearance',
+    },
+    {
+      name: 'ExamRecords',
+      description: 'Registry & Exam Records operations: result moderation, Senate publishing, graduation degree audits, transcript issuance, and verification',
+    },
   ],
   components: {
     securitySchemes: {
@@ -1254,6 +1262,19 @@ const swaggerSpec = {
         responses: { 200: { description: 'Departments list returned' } },
       },
     },
+    '/meta/transcripts/verify/{code}': {
+      get: {
+        tags: ['Meta'],
+        summary: 'Public verification of official academic transcript by verification code',
+        parameters: [
+          { name: 'code', in: 'path', required: true, schema: { type: 'string' }, description: 'Official transcript verification code' },
+        ],
+        responses: {
+          200: { description: 'Transcript verified successfully with integrity verification hash' },
+          404: { description: 'Transcript not found or invalid verification code' },
+        },
+      },
+    },
     '/media/upload-signature': {
       get: {
         tags: ['Media'],
@@ -1920,6 +1941,469 @@ const swaggerSpec = {
         },
         responses: {
           200: { description: 'Grades updated successfully' },
+        },
+      },
+    },
+
+    // ==========================================
+    // --- FINANCE OFFICER & BURSARY OPERATIONS ---
+    // ==========================================
+    '/finance/clearance/my-status': {
+      get: {
+        tags: ['Finance'],
+        summary: 'Student self-service: Check my financial clearance status, fee debts, and holds',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Student financial clearance status retrieved successfully' },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden - STUDENT role required' },
+        },
+      },
+    },
+    '/finance/metrics': {
+      get: {
+        tags: ['Finance'],
+        summary: 'Get bursary executive dashboard KPIs and financial monitoring metrics',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Financial metrics retrieved successfully' },
+          403: { description: 'Forbidden - Finance operations permission required' },
+        },
+      },
+    },
+    '/finance/fees': {
+      get: {
+        tags: ['Finance'],
+        summary: 'List institutional fee catalog with session, category, level, and department filters',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'academicSession', in: 'query', schema: { type: 'string', example: '2024/2025' }, description: 'Academic session' },
+          { name: 'category', in: 'query', schema: { type: 'string', enum: ['TUITION', 'ACCEPTANCE', 'HOSTEL', 'DEPARTMENTAL', 'EXAMINATION', 'LATE_REGISTRATION', 'CONVOCATION', 'OTHER'] }, description: 'Fee category' },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'] }, description: 'Fee structure status' },
+          { name: 'departmentId', in: 'query', schema: { type: 'string' }, description: 'Department ID' },
+          { name: 'level', in: 'query', schema: { type: 'integer' }, description: 'Academic level (e.g. 100, 200)' },
+        ],
+        responses: {
+          200: { description: 'Fee catalog retrieved successfully' },
+        },
+      },
+      post: {
+        tags: ['Finance'],
+        summary: 'Create a new fee structure configuration',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name', 'category', 'amount', 'academicSession'],
+                properties: {
+                  name: { type: 'string', example: 'Undergraduate Tuition 2024/2025' },
+                  category: { type: 'string', enum: ['TUITION', 'ACCEPTANCE', 'HOSTEL', 'DEPARTMENTAL', 'EXAMINATION', 'LATE_REGISTRATION', 'CONVOCATION', 'OTHER'] },
+                  amount: { type: 'number', minimum: 1, example: 150000 },
+                  currency: { type: 'string', default: 'NGN', example: 'NGN' },
+                  academicSession: { type: 'string', example: '2024/2025' },
+                  semester: { type: 'string', enum: ['FIRST_SEMESTER', 'SECOND_SEMESTER'] },
+                  level: { type: 'integer', example: 100 },
+                  departmentId: { type: 'string', example: '65f2a1b2c3d4e5f6a7b8c9d0' },
+                  programmeId: { type: 'string', example: '65f2a1b2c3d4e5f6a7b8c9d1' },
+                  status: { type: 'string', enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'], default: 'DRAFT' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Fee structure created successfully' },
+          400: { description: 'Validation error' },
+        },
+      },
+    },
+    '/finance/fees/{id}/status': {
+      patch: {
+        tags: ['Finance'],
+        summary: 'Update fee structure status (DRAFT, ACTIVE, ARCHIVED)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' }, description: 'Fee structure ID' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: {
+                  status: { type: 'string', enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'] },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Fee structure status updated successfully' },
+          404: { description: 'Fee structure not found' },
+        },
+      },
+    },
+    '/finance/transactions': {
+      get: {
+        tags: ['Finance'],
+        summary: 'Get paginated payment transaction ledger with multi-criteria filtering',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+          { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Search by reference or student name/matric' },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['PENDING', 'SUCCESSFUL', 'FAILED', 'REFUNDED'] } },
+          { name: 'channel', in: 'query', schema: { type: 'string', enum: ['CARD', 'BANK_TRANSFER', 'BANK_BRANCH', 'USSD', 'MANUAL_RECEIPT'] } },
+          { name: 'session', in: 'query', schema: { type: 'string', example: '2024/2025' } },
+        ],
+        responses: {
+          200: { description: 'Transaction ledger retrieved successfully' },
+        },
+      },
+    },
+    '/finance/transactions/{id}': {
+      get: {
+        tags: ['Finance'],
+        summary: 'Get detailed transaction information by ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' }, description: 'Transaction ID' },
+        ],
+        responses: {
+          200: { description: 'Transaction details retrieved successfully' },
+          404: { description: 'Transaction not found' },
+        },
+      },
+    },
+    '/finance/transactions/record': {
+      post: {
+        tags: ['Finance'],
+        summary: 'Manually record and reconcile offline bank teller / transfer payment',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['studentId', 'amount', 'reference', 'channel', 'session'],
+                properties: {
+                  studentId: { type: 'string', example: '65f2a1b2c3d4e5f6a7b8c9d0' },
+                  feeStructureId: { type: 'string', example: '65f2a1b2c3d4e5f6a7b8c9d1' },
+                  amount: { type: 'number', minimum: 1, example: 50000 },
+                  reference: { type: 'string', example: 'UB-TELLER-2025-001' },
+                  channel: { type: 'string', enum: ['BANK_TRANSFER', 'BANK_BRANCH', 'MANUAL_RECEIPT'], default: 'MANUAL_RECEIPT' },
+                  session: { type: 'string', example: '2024/2025' },
+                  description: { type: 'string', example: 'Bank deposit slip teller #99281' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Payment recorded and reconciled successfully' },
+          400: { description: 'Validation error or duplicate reference' },
+        },
+      },
+    },
+    '/finance/refunds': {
+      get: {
+        tags: ['Finance'],
+        summary: 'List student refund claims',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['REQUESTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'DISBURSED'] }, description: 'Filter by refund status' },
+        ],
+        responses: {
+          200: { description: 'Refund claims retrieved successfully' },
+        },
+      },
+    },
+    '/finance/refunds/{id}/adjudicate': {
+      patch: {
+        tags: ['Finance'],
+        summary: 'Adjudicate student refund claim (Approve, Reject, or Disburse voucher)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' }, description: 'Refund claim ID' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: {
+                  status: { type: 'string', enum: ['UNDER_REVIEW', 'APPROVED', 'REJECTED', 'DISBURSED'] },
+                  amountApproved: { type: 'number', example: 25000 },
+                  adjudicationNote: { type: 'string', example: 'Approved after verifying bursary overpayment' },
+                  disbursementRef: { type: 'string', example: 'CBN-PAYOUT-VCH-8821' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Refund claim adjudicated successfully' },
+          400: { description: 'Invalid adjudication payload' },
+          404: { description: 'Refund claim not found' },
+        },
+      },
+    },
+    '/finance/reports': {
+      get: {
+        tags: ['Finance'],
+        summary: 'Get aggregated financial report and revenue analytics',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'session', in: 'query', schema: { type: 'string', example: '2024/2025' }, description: 'Filter by academic session' },
+        ],
+        responses: {
+          200: { description: 'Financial analytics report retrieved successfully' },
+        },
+      },
+    },
+    '/finance/reports/export': {
+      get: {
+        tags: ['Finance'],
+        summary: 'Export financial report as CSV download or JSON',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'session', in: 'query', schema: { type: 'string', example: '2024/2025' } },
+          { name: 'format', in: 'query', schema: { type: 'string', enum: ['csv', 'json'], default: 'csv' } },
+        ],
+        responses: {
+          200: { description: 'Report exported successfully (returns text/csv or application/json)' },
+        },
+      },
+    },
+    '/finance/clearance/{studentId}': {
+      get: {
+        tags: ['Finance'],
+        summary: 'Inspect student financial clearance status, outstanding balances, and active holds',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'studentId', in: 'path', required: true, schema: { type: 'string' }, description: 'Student ID' },
+        ],
+        responses: {
+          200: { description: 'Student financial clearance details retrieved successfully' },
+          404: { description: 'Student not found' },
+        },
+      },
+    },
+
+    // ==========================================
+    // --- EXAMINATION & RECORDS OPERATIONS ---
+    // ==========================================
+    '/exam-records/overview': {
+      get: {
+        tags: ['ExamRecords'],
+        summary: 'Get Registry academic workflow monitoring overview and KPI metrics',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Academic workflow metrics retrieved successfully' },
+          403: { description: 'Forbidden - Examination & Records permission required' },
+        },
+      },
+    },
+    '/exam-records/results/batches': {
+      get: {
+        tags: ['ExamRecords'],
+        summary: 'Get course offering result batches ready for Senate moderation and publishing',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['PENDING_HOD', 'HOD_APPROVED', 'PUBLISHED', 'FLAGGED'] } },
+          { name: 'session', in: 'query', schema: { type: 'string', example: '2024/2025' } },
+          { name: 'departmentId', in: 'query', schema: { type: 'string' } },
+          { name: 'semester', in: 'query', schema: { type: 'string', enum: ['FIRST_SEMESTER', 'SECOND_SEMESTER'] } },
+        ],
+        responses: {
+          200: { description: 'Course result batches retrieved successfully' },
+        },
+      },
+    },
+    '/exam-records/offerings/{offeringId}/publish': {
+      post: {
+        tags: ['ExamRecords'],
+        summary: 'Officially approve and publish course results to students and transcripts (Senate Release)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'offeringId', in: 'path', required: true, schema: { type: 'string' }, description: 'Course offering ID' },
+        ],
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  remarks: { type: 'string', example: 'Approved by University Senate meeting on 28th September 2026' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Results successfully published to students and transcripts' },
+          400: { description: 'Cannot publish results not approved by HOD or incomplete scores' },
+          404: { description: 'Course offering not found' },
+        },
+      },
+    },
+    '/exam-records/offerings/{offeringId}/flag-discrepancy': {
+      post: {
+        tags: ['ExamRecords'],
+        summary: 'Flag discrepancy on result batch and return to HOD/Lecturer for correction',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'offeringId', in: 'path', required: true, schema: { type: 'string' }, description: 'Course offering ID' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['reason'],
+                properties: {
+                  reason: { type: 'string', minLength: 5, example: 'Abnormal grade distribution: 80% A grades without CA breakdown' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Result batch discrepancy flagged and returned to HOD' },
+          404: { description: 'Course offering not found' },
+        },
+      },
+    },
+    '/exam-records/students/{studentId}/audit': {
+      get: {
+        tags: ['ExamRecords'],
+        summary: 'Get 360-degree academic audit history, GPA/CGPA per semester, and graduation eligibility',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'studentId', in: 'path', required: true, schema: { type: 'string' }, description: 'Student ID' },
+        ],
+        responses: {
+          200: { description: 'Student academic audit retrieved successfully' },
+          404: { description: 'Student not found' },
+        },
+      },
+    },
+    '/exam-records/graduation/cohort': {
+      get: {
+        tags: ['ExamRecords'],
+        summary: 'Run automated graduation degree audit for candidate cohort',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'session', in: 'query', schema: { type: 'string', example: '2024/2025' }, description: 'Academic session' },
+        ],
+        responses: {
+          200: { description: 'Graduation cohort audit completed successfully' },
+        },
+      },
+      post: {
+        tags: ['ExamRecords'],
+        summary: 'Trigger graduation degree audit computation for candidate cohort',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Graduation cohort audit executed successfully' },
+        },
+      },
+    },
+    '/exam-records/graduation/clear/{studentId}': {
+      post: {
+        tags: ['ExamRecords'],
+        summary: 'Formally confer graduation clearance on candidate (Senate Approval)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'studentId', in: 'path', required: true, schema: { type: 'string' }, description: 'Student ID' },
+          { name: 'session', in: 'query', schema: { type: 'string', example: '2024/2025' } },
+        ],
+        responses: {
+          200: { description: 'Student graduation clearance conferred successfully' },
+          400: { description: 'Student does not meet graduation criteria or has outstanding holds' },
+          404: { description: 'Student not found' },
+        },
+      },
+    },
+    '/exam-records/transcripts/requests': {
+      get: {
+        tags: ['ExamRecords'],
+        summary: 'Get queue of student transcript applications awaiting processing or issuance',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['REQUESTED', 'PROCESSING', 'ISSUED', 'REJECTED'] } },
+        ],
+        responses: {
+          200: { description: 'Transcript requests retrieved successfully' },
+        },
+      },
+    },
+    '/exam-records/transcripts/request': {
+      post: {
+        tags: ['ExamRecords'],
+        summary: 'Student or Officer self-service application for official academic transcript',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['destinationAddress', 'destinationEmail', 'recipientName', 'purpose', 'deliveryMethod'],
+                properties: {
+                  studentId: { type: 'string', description: 'Target student ID (optional for student, required if staff requesting)' },
+                  destinationAddress: { type: 'string', example: 'Admissions Office, Oxford University, Oxford, UK' },
+                  destinationEmail: { type: 'string', format: 'email', example: 'transcripts@oxford.ac.uk' },
+                  recipientName: { type: 'string', example: 'Postgraduate Admissions Board' },
+                  purpose: { type: 'string', enum: ['EMPLOYMENT', 'FURTHER_STUDIES', 'VISA_IMMIGRATION', 'PERSONAL', 'SCHOLARSHIP', 'OTHER'] },
+                  deliveryMethod: { type: 'string', enum: ['ELECTRONIC', 'PHYSICAL_COURIER', 'STUDENT_PICKUP'] },
+                  notes: { type: 'string', example: 'Include certified English syllabus description' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Transcript request created and submitted successfully' },
+          400: { description: 'Validation error' },
+        },
+      },
+    },
+    '/exam-records/transcripts/{id}/issue': {
+      post: {
+        tags: ['ExamRecords'],
+        summary: 'Generate, cryptographically sign (SHA-256 hash), and issue official academic transcript PDF',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' }, description: 'Transcript request ID' },
+        ],
+        responses: {
+          200: { description: 'Official academic transcript generated and signed successfully with tamper-proof hash and verification URL' },
+          400: { description: 'Student has unresolved financial holds or pending results' },
+          404: { description: 'Transcript request not found' },
+        },
+      },
+    },
+    '/exam-records/transcripts/verify/{code}': {
+      get: {
+        tags: ['ExamRecords'],
+        summary: 'Public verification of official academic transcript by verification code',
+        parameters: [
+          { name: 'code', in: 'path', required: true, schema: { type: 'string' }, description: 'Official transcript verification code' },
+        ],
+        responses: {
+          200: { description: 'Transcript verified successfully with integrity verification hash' },
+          404: { description: 'Transcript not found or invalid verification code' },
         },
       },
     },

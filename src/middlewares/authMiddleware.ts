@@ -72,8 +72,10 @@ export const requireAuth = async (
       user.role === 'SCHOOL_ADMIN' ||
       user.role === 'LECTURER' ||
       user.role === 'HOSTEL_MANAGER' ||
-      user.role === 'HOD';
-
+      user.role === 'HOD' ||
+      user.role === 'FINANCE_OFFICER' ||
+      user.role === 'EXAMINATION_OFFICER' ||
+      user.role === 'HOSTEL_STAFF';
 
     if (requiresApproval && user.approvalStatus !== 'VERIFIED') {
       return next(
@@ -91,11 +93,25 @@ export const requireAuth = async (
   }
 };
 
-export const requireRole = (...roles: AllowedRole[]) => {
+type RoleOrGroup = AllowedRole | readonly AllowedRole[] | AllowedRole[];
+
+export const requireRole = (...roles: RoleOrGroup[]) => {
+  const allowedSet = new Set<string>();
+
+  for (const item of roles) {
+    if (Array.isArray(item)) {
+      for (const r of item) {
+        allowedSet.add(r);
+      }
+    } else if (typeof item === 'string') {
+      allowedSet.add(item);
+    }
+  }
+
   return (req: Request, res: Response, next: NextFunction): void => {
     const user = res.locals.user as { role?: AllowedRole } | undefined;
 
-    if (!user?.role || !roles.includes(user.role)) {
+    if (!user?.role || !allowedSet.has(user.role)) {
       return next(
         createError(403, 'You do not have permission to perform this action.'),
       );
@@ -103,4 +119,10 @@ export const requireRole = (...roles: AllowedRole[]) => {
 
     next();
   };
+};
+
+export const requireAccessGroup = (
+  group: readonly AllowedRole[] | AllowedRole[],
+) => {
+  return requireRole(group);
 };
