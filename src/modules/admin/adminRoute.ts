@@ -27,6 +27,7 @@ import {
 } from './adminController';
 
 import { requireAuth, requireRole, ROLES } from '../../middlewares/authMiddleware';
+import { AccessGroups } from '../../configs/rolesConfig';
 import { validateRequest, validateQuery } from '../../utils/validation';
 import {
   createHostelAdminSchema,
@@ -50,28 +51,28 @@ router.use(requireAuth);
 
 router.get(
   '/applications',
-  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
+  requireRole(AccessGroups.MANAGE_APPLICATIONS),
   validateQuery(getApplicationsQuerySchema),
   handleGetApplications,
 );
 
 router.patch(
   '/applications/:applicationId/status',
-  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
+  requireRole(AccessGroups.MANAGE_APPLICATIONS),
   validateRequest(updateApplicationStatusSchema),
   handleUpdateApplicationStatus,
 );
 
 router.post(
   '/applications/:applicationId/issue-offer',
-  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
+  requireRole(AccessGroups.MANAGE_APPLICATIONS),
   validateRequest(issueOfferSchema),
   handleIssueOffer,
 );
 
 router.get(
   '/offers',
-  requireRole(ROLES.SCHOOL_ADMIN, ROLES.ADMISSION_OFFICER),
+  requireRole(AccessGroups.MANAGE_APPLICATIONS),
   validateQuery(getOffersQuerySchema),
   handleGetOffers,
 );

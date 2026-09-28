@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireAuth, requireRole, ROLES } from '../../middlewares/authMiddleware';
+import { AccessGroups } from '../../configs/rolesConfig';
 import { validateRequest } from '../../utils/validation';
 import * as schemas from './courseSchemas';
 import * as controller from './courseController';
@@ -101,23 +102,23 @@ router.post(
 // --- Result Management & HOD Approval ---
 router.get(
   '/course-offerings/:courseOfferingId/results',
-  requireRole(ROLES.HOD, ROLES.LECTURER, ROLES.SCHOOL_ADMIN),
+  requireRole(AccessGroups.COURSE_RESULTS_VIEW),
   controller.handleGetOfferingResults,
 );
 router.get(
   '/department/results',
-  requireRole(ROLES.HOD, ROLES.SCHOOL_ADMIN),
+  requireRole(AccessGroups.COURSE_RESULTS_HOD_APPROVAL),
   controller.handleGetDepartmentResultsSummary,
 );
 router.post(
   '/course-offerings/:courseOfferingId/approve-results',
-  requireRole(ROLES.HOD, ROLES.SCHOOL_ADMIN),
+  requireRole(AccessGroups.COURSE_RESULTS_HOD_APPROVAL),
   validateRequest(schemas.approveResultsSchema),
   controller.handleApproveOfferingResults,
 );
 router.post(
   '/course-offerings/:courseOfferingId/reject-results',
-  requireRole(ROLES.HOD, ROLES.SCHOOL_ADMIN),
+  requireRole(AccessGroups.COURSE_RESULTS_HOD_APPROVAL),
   validateRequest(schemas.rejectResultsSchema),
   controller.handleRejectOfferingResults,
 );
