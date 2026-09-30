@@ -1,8 +1,13 @@
 import { createTransport } from 'nodemailer';
-import { EMAIL_USERNAME, EMAIL_APP_PASSWORD, FRONTEND_URL } from '../configs/envConfig';
-
-
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { BrevoClient } from '@getbrevo/brevo';
+import {
+  EMAIL_USERNAME,
+  EMAIL_APP_PASSWORD,
+  EMAIL_PROVIDER,
+  BREVO_API_KEY,
+  FRONTEND_URL,
+} from '../configs/envConfig';
 import { mailLog } from '../configs/loggerConfig';
 import { escapeHtml } from './sanitize';
 
@@ -11,8 +16,8 @@ const BRAND_LOGO_URL =
 const BRAND_PRIMARY = '#0c241f';
 const BRAND_WHITE = '#ffffff';
 
-// Create email transporter using Gmail service
-const createEmailTransporter = () => {
+// Create email transporter using Gmail service (retained without degradation)
+export const createGmailTransporter = () => {
   return createTransport({
     service: 'gmail',
     auth: {
@@ -27,18 +32,108 @@ const createEmailTransporter = () => {
   } as SMTPTransport.Options);
 };
 
+// Retained alias for backward compatibility
+export const createEmailTransporter = createGmailTransporter;
+
+// Lazy-initialized Brevo API Client
+let brevoClientInstance: BrevoClient | null = null;
+export const getBrevoClient = (): BrevoClient | null => {
+  if (!brevoClientInstance && BREVO_API_KEY) {
+    brevoClientInstance = new BrevoClient({
+      apiKey: BREVO_API_KEY,
+      timeoutInSeconds: 30,
+      maxRetries: 3,
+    });
+  }
+  return brevoClientInstance;
+};
+
+export interface SendEmailOptions {
+  to: string;
+  toName?: string;
+  subject: string;
+  html: string;
+  fromName?: string;
+  fromEmail?: string;
+  replyTo?: { email: string; name?: string };
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
+  logLabel: string;
+}
+
+/**
+ * Unified email dispatcher that defaults to Brevo and retains Gmail as an active fallback / alternative.
+ */
+export const dispatchEmail = async (options: SendEmailOptions): Promise<void> => {
+  const provider = (EMAIL_PROVIDER || 'brevo').toLowerCase();
+  const fromName = options.fromName || 'Uniplug Team';
+  const fromEmail = options.fromEmail || EMAIL_USERNAME || 'uniplug.edu@gmail.com';
+
+  // 1. Primary path: Brevo (when provider is brevo and API key is present)
+  if (provider === 'brevo' && BREVO_API_KEY) {
+    try {
+      const client = getBrevoClient();
+      if (!client) {
+        throw new Error('Brevo client could not be initialized');
+      }
+
+      const brevoAttachments = options.attachments?.map((att) => ({
+        name: att.filename,
+        content: att.content.toString('base64'),
+      }));
+
+      const result = await client.transactionalEmails.sendTransacEmail({
+        sender: { name: fromName, email: fromEmail },
+        to: [{ email: options.to, name: options.toName || options.to }],
+        subject: options.subject,
+        htmlContent: options.html,
+        attachment: brevoAttachments,
+        replyTo: options.replyTo,
+      });
+
+      mailLog.info(
+        `[Brevo] ${options.logLabel} sent to ${options.to}: Message ID ${result.messageId}`,
+      );
+      return;
+    } catch (brevoError) {
+      mailLog.error(
+        `[Brevo] Error sending ${options.logLabel} to ${options.to}: ${brevoError}. Retaining reliability by failing over to Gmail...`,
+      );
+    }
+  }
+
+  // 2. Secondary path / Failover: Gmail (retained without degradation)
+  try {
+    const transporter = createGmailTransporter();
+    const mailOptions = {
+      from: `${fromName} <${fromEmail}>`,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      attachments: options.attachments?.map((att) => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+      })),
+      ...(options.replyTo ? { replyTo: options.replyTo.email } : {}),
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    mailLog.info(`[Gmail] ${options.logLabel} sent to ${options.to}: ${info.response}`);
+  } catch (gmailError) {
+    mailLog.error(`[Gmail] Error sending ${options.logLabel} to ${options.to}: ${gmailError}`);
+  }
+};
+
 export const sendOtpEmail = async (
   name: string,
   email: string,
   otpCode: string,
 ) => {
-  const transporter = createEmailTransporter();
-
-  const mailOptions = {
-    from: `Uniplug Team <${EMAIL_USERNAME}>`,
-    to: email,
-    subject: 'Verify your Uniplug account - OTP Code',
-    html: `
+  const html = `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -146,15 +241,16 @@ export const sendOtpEmail = async (
             </div>
         </body>
         </html>
-        `,
-  };
+        `;
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    mailLog.info(`OTP email sent to ${email}: ${info.response}`);
-  } catch (error) {
-    mailLog.error(`Error sending OTP email to ${email}: ${error}`);
-  }
+  await dispatchEmail({
+    to: email,
+    toName: name,
+    subject: 'Verify your Uniplug account - OTP Code',
+    html,
+    fromName: 'Uniplug Team',
+    logLabel: 'OTP email',
+  });
 };
 
 export const resendOtpEmail = async (
@@ -162,13 +258,7 @@ export const resendOtpEmail = async (
   email: string,
   otpCode: string,
 ) => {
-  const transporter = createEmailTransporter();
-
-  const mailOptions = {
-    from: `Uniplug Team <${EMAIL_USERNAME}>`,
-    to: email,
-    subject: 'Resend OTP Verification Code',
-    html: `
+  const html = `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -287,15 +377,16 @@ export const resendOtpEmail = async (
             </div>
         </body>
         </html>
-        `,
-  };
+        `;
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    mailLog.info(`Resend OTP email sent to ${email}: ${info.response}`);
-  } catch (error) {
-    mailLog.error(`Error sending resend OTP email to ${email}: ${error}`);
-  }
+  await dispatchEmail({
+    to: email,
+    toName: name,
+    subject: 'Resend OTP Verification Code',
+    html,
+    fromName: 'Uniplug Team',
+    logLabel: 'Resend OTP email',
+  });
 };
 
 export const sendPasswordResetEmail = async (
@@ -303,14 +394,9 @@ export const sendPasswordResetEmail = async (
   email: string,
   resetLink: string,
 ) => {
-  const transporter = createEmailTransporter();
   const safeResetLink = escapeHtml(resetLink);
 
-  const mailOptions = {
-    from: `Uniplug Team <${EMAIL_USERNAME}>`,
-    to: email,
-    subject: 'Reset Your Uniplug Password',
-    html: `
+  const html = `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -436,19 +522,16 @@ export const sendPasswordResetEmail = async (
             </div>
         </body>
         </html>
-        `,
-  };
+        `;
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    mailLog.info(
-      `Password reset link email sent to ${email}: ${info.response}`,
-    );
-  } catch (error) {
-    mailLog.error(
-      `Error sending password reset link email to ${email}: ${error}`,
-    );
-  }
+  await dispatchEmail({
+    to: email,
+    toName: name,
+    subject: 'Reset Your Uniplug Password',
+    html,
+    fromName: 'Uniplug Team',
+    logLabel: 'Password reset link email',
+  });
 };
 
 export const sendStaffOnboardingEmail = async (payload: {
@@ -463,8 +546,6 @@ export const sendStaffOnboardingEmail = async (payload: {
   department: string;
   otpCode: string;
 }) => {
-  const transporter = createEmailTransporter();
-
   const safeName = escapeHtml(payload.name);
   const safeStaffId = escapeHtml(payload.staffId);
   const safeAdminId = escapeHtml(payload.adminId);
@@ -474,11 +555,7 @@ export const sendStaffOnboardingEmail = async (payload: {
   const safeSchool = escapeHtml(payload.school);
   const roleLabel = payload.role === 'LECTURER' ? 'Lecturer' : 'Hostel Manager';
 
-  const mailOptions = {
-    from: `Uniplug Team <${EMAIL_USERNAME}>`,
-    to: payload.email,
-    subject: `${roleLabel} Account Created - Uniplug Login Details`,
-    html: `
+  const html = `
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -531,19 +608,16 @@ export const sendStaffOnboardingEmail = async (payload: {
                 </div>
             </body>
             </html>
-        `,
-  };
+        `;
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    mailLog.info(
-      `Staff onboarding email sent to ${payload.email}: ${info.response}`,
-    );
-  } catch (error) {
-    mailLog.error(
-      `Error sending staff onboarding email to ${payload.email}: ${error}`,
-    );
-  }
+  await dispatchEmail({
+    to: payload.email,
+    toName: payload.name,
+    subject: `${roleLabel} Account Created - Uniplug Login Details`,
+    html,
+    fromName: 'Uniplug Team',
+    logLabel: 'Staff onboarding email',
+  });
 };
 
 export const sendSchoolAdminOnboardingEmail = async (payload: {
@@ -555,19 +629,13 @@ export const sendSchoolAdminOnboardingEmail = async (payload: {
   school: string;
   otpCode: string;
 }) => {
-  const transporter = createEmailTransporter();
-
   const safeName = escapeHtml(payload.name);
   const safeSchoolId = escapeHtml(payload.schoolId);
   const safeSchool = escapeHtml(payload.school);
   const safePassword = escapeHtml(payload.password);
   const safeAdminId = escapeHtml(payload.adminId);
 
-  const mailOptions = {
-    from: `Uniplug Team <${EMAIL_USERNAME}>`,
-    to: payload.email,
-    subject: 'School Admin Account Created - Uniplug Login Details',
-    html: `
+  const html = `
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -618,19 +686,16 @@ export const sendSchoolAdminOnboardingEmail = async (payload: {
                 </div>
             </body>
             </html>
-        `,
-  };
+        `;
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    mailLog.info(
-      `School admin onboarding email sent to ${payload.email}: ${info.response}`,
-    );
-  } catch (error) {
-    mailLog.error(
-      `Error sending school admin onboarding email to ${payload.email}: ${error}`,
-    );
-  }
+  await dispatchEmail({
+    to: payload.email,
+    toName: payload.name,
+    subject: 'School Admin Account Created - Uniplug Login Details',
+    html,
+    fromName: 'Uniplug Team',
+    logLabel: 'School admin onboarding email',
+  });
 };
 
 export const sendOfferIssuedEmail = async (payload: {
@@ -642,12 +707,7 @@ export const sendOfferIssuedEmail = async (payload: {
   isAlternativeOffer: boolean;
   deadlineDays: number;
 }) => {
-  const transporter = createEmailTransporter();
-  const mailOptions = {
-    from: `Uniplug Admissions <${EMAIL_USERNAME}>`,
-    to: payload.email,
-    subject: `Admission Offer Issued — ${payload.schoolName}`,
-    html: `
+  const html = `
       <!DOCTYPE html>
       <html>
       <head><style>
@@ -673,15 +733,16 @@ export const sendOfferIssuedEmail = async (payload: {
         </div>
       </body>
       </html>
-    `,
-  };
+    `;
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    mailLog.info(`Offer issued email sent to ${payload.email}: ${info.response}`);
-  } catch (error) {
-    mailLog.error(`Error sending offer issued email to ${payload.email}: ${error}`);
-  }
+  await dispatchEmail({
+    to: payload.email,
+    toName: payload.applicantName,
+    subject: `Admission Offer Issued — ${payload.schoolName}`,
+    html,
+    fromName: 'Uniplug Admissions',
+    logLabel: 'Offer issued email',
+  });
 };
 
 export const sendOfferAcceptedEmailWithAttachment = async (payload: {
@@ -692,12 +753,7 @@ export const sendOfferAcceptedEmailWithAttachment = async (payload: {
   matricNumber: string;
   pdfBuffer: Buffer;
 }) => {
-  const transporter = createEmailTransporter();
-  const mailOptions = {
-    from: `Uniplug Admissions <${EMAIL_USERNAME}>`,
-    to: payload.email,
-    subject: `Admission Offer Accepted & Official Offer Letter — ${payload.schoolName}`,
-    html: `
+  const html = `
       <!DOCTYPE html>
       <html>
       <head><style>
@@ -719,7 +775,14 @@ export const sendOfferAcceptedEmailWithAttachment = async (payload: {
         </div>
       </body>
       </html>
-    `,
+    `;
+
+  await dispatchEmail({
+    to: payload.email,
+    toName: payload.applicantName,
+    subject: `Admission Offer Accepted & Official Offer Letter — ${payload.schoolName}`,
+    html,
+    fromName: 'Uniplug Admissions',
     attachments: [
       {
         filename: `Admission_Offer_Letter_${payload.matricNumber.replace(/\//g, '_')}.pdf`,
@@ -727,13 +790,7 @@ export const sendOfferAcceptedEmailWithAttachment = async (payload: {
         contentType: 'application/pdf',
       },
     ],
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    mailLog.info(`Offer accepted email sent to ${payload.email}: ${info.response}`);
-  } catch (error) {
-    mailLog.error(`Error sending offer accepted email to ${payload.email}: ${error}`);
-  }
+    logLabel: 'Offer accepted email',
+  });
 };
 
