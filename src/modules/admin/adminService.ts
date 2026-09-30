@@ -98,8 +98,12 @@ const createStaffAccount = async (
 
   const { firstName, lastName } = splitFullName(payload.fullName);
   const passwordHash = await hashPassword(payload.password);
-  const otpCode = generateOtpCode();
   const adminId = generateAdminId(firstName, actor.schoolId);
+
+  // Finance Officer and Examination Officer admins are automatically verified and do not need to verify via OTP
+  const isAutoVerified =
+    role === 'FINANCE_OFFICER' || role === 'EXAMINATION_OFFICER';
+  const otpCode = isAutoVerified ? '' : generateOtpCode();
 
   const user = canResubmitRejected
     ? await prisma.user.update({
@@ -116,18 +120,18 @@ const createStaffAccount = async (
           tenantId: actor.tenantId,
           approvalStatus: 'VERIFIED',
           approvalRemark: null,
-          isVerified: false,
+          isVerified: isAutoVerified ? true : false,
           credential: {
             upsert: {
               create: {
                 passwordHash,
-                emailOtpHash: hashOtpCode(otpCode),
-                emailOtpExpiresAt: getOtpExpiryDate(),
+                emailOtpHash: isAutoVerified ? null : hashOtpCode(otpCode),
+                emailOtpExpiresAt: isAutoVerified ? null : getOtpExpiryDate(),
               },
               update: {
                 passwordHash,
-                emailOtpHash: hashOtpCode(otpCode),
-                emailOtpExpiresAt: getOtpExpiryDate(),
+                emailOtpHash: isAutoVerified ? null : hashOtpCode(otpCode),
+                emailOtpExpiresAt: isAutoVerified ? null : getOtpExpiryDate(),
               },
             },
           },
@@ -159,13 +163,13 @@ const createStaffAccount = async (
           school: actor.school,
           tenantId: actor.tenantId,
           role,
-          isVerified: false,
+          isVerified: isAutoVerified ? true : false,
           approvalStatus: 'VERIFIED',
           credential: {
             create: {
               passwordHash,
-              emailOtpHash: hashOtpCode(otpCode),
-              emailOtpExpiresAt: getOtpExpiryDate(),
+              emailOtpHash: isAutoVerified ? null : hashOtpCode(otpCode),
+              emailOtpExpiresAt: isAutoVerified ? null : getOtpExpiryDate(),
             },
           },
         },
@@ -195,10 +199,15 @@ const createStaffAccount = async (
     staffId: resolvedStaffId,
     department: department.name,
     otpCode,
+    isAutoVerified,
   });
 
+  const message = isAutoVerified
+    ? `${role.replace('_', ' ').toLowerCase()} account created, automatically verified, and approved successfully. Login credentials sent to email.`
+    : `${role.replace('_', ' ').toLowerCase()} account created and approved successfully. OTP and login details sent by email.`;
+
   return {
-    message: `${role.replace('_', ' ').toLowerCase()} account created and approved successfully. OTP and login details sent by email.`,
+    message,
     user,
   };
 };

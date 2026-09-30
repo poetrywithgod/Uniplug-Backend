@@ -544,7 +544,8 @@ export const sendStaffOnboardingEmail = async (payload: {
   school: string;
   staffId: string;
   department: string;
-  otpCode: string;
+  otpCode?: string;
+  isAutoVerified?: boolean;
 }) => {
   const safeName = escapeHtml(payload.name);
   const safeStaffId = escapeHtml(payload.staffId);
@@ -553,7 +554,54 @@ export const sendStaffOnboardingEmail = async (payload: {
   const safePassword = escapeHtml(payload.password);
   const safeSchoolId = escapeHtml(payload.schoolId);
   const safeSchool = escapeHtml(payload.school);
-  const roleLabel = payload.role === 'LECTURER' ? 'Lecturer' : 'Hostel Manager';
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'LECTURER':
+        return 'Lecturer';
+      case 'HOSTEL_MANAGER':
+        return 'Hostel Manager';
+      case 'HOSTEL_STAFF':
+        return 'Hostel Staff';
+      case 'HOD':
+        return 'Head of Department';
+      case 'ADMISSION_OFFICER':
+        return 'Admission Officer';
+      case 'EXAMINATION_OFFICER':
+        return 'Examination Officer';
+      case 'FINANCE_OFFICER':
+        return 'Finance Officer';
+      default:
+        return role.replace(/_/g, ' ');
+    }
+  };
+
+  const roleLabel = getRoleLabel(payload.role);
+  const isAutoVerified =
+    payload.isAutoVerified ??
+    (payload.role === 'FINANCE_OFFICER' || payload.role === 'EXAMINATION_OFFICER');
+
+  const verificationSection = isAutoVerified
+    ? `
+      <div style="background: #e6f4ea; border: 1px solid #137333; color: #137333; border-radius: 8px; padding: 14px; margin: 18px 0; text-align: center; font-weight: 600; font-size: 15px;">
+        ✅ Your account is automatically verified and ready for immediate access.
+      </div>
+      <div style="text-align: center; margin: 20px 0;">
+        <a href="${FRONTEND_URL}/login" style="background-color: ${BRAND_PRIMARY}; color: ${BRAND_WHITE}; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+          Log In to Uniplug
+        </a>
+      </div>
+      <div class="note">
+        For security, we recommend that you change your password upon your first login.
+      </div>
+    `
+    : `
+      <div style="font-size: 14px; margin-top: 14px;">Verify your account with this OTP before first login:</div>
+      <div class="otp">${payload.otpCode}</div>
+      <div class="note">
+        This OTP expires in 10 minutes. For security, change your password after first login.
+      </div>
+    `;
 
   const html = `
             <!DOCTYPE html>
@@ -594,12 +642,7 @@ export const sendStaffOnboardingEmail = async (payload: {
                         <div class="row"><span class="label">Password:</span> ${safePassword}</div>
                     </div>
 
-                    <div style="font-size: 14px; margin-top: 14px;">Verify your account with this OTP before first login:</div>
-                    <div class="otp">${payload.otpCode}</div>
-
-                    <div class="note">
-                        This OTP expires in 10 minutes. For security, change your password after first login.
-                    </div>
+                    ${verificationSection}
 
                     <div class="footer">
                         Best regards,<br />
