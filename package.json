@@ -34,6 +34,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^6.0.3",
     "@prisma/client": "6.19",
     "@sentry/cli": "^2.58.5",
     "@sentry/node": "^10.36.0",
